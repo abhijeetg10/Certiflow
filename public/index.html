@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certiflow - Bulk Certificates</title>
+    <!-- Fonts: Poppins for headings, Inter for body -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg pt-4 pb-3">
+        <div class="container">
+            <a class="navbar-brand brand-logo" href="#">
+                <i class="fa-solid fa-layer-group"></i> Certiflow
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navItems">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-center" id="navItems">
+                <ul class="navbar-nav gap-4">
+                    <li class="nav-item"><a class="nav-link active" href="#">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#generator">Generate</a></li>
+                </ul>
+            </div>
+            <div class="d-none d-lg-flex align-items-center gap-3">
+                <button class="theme-btn" id="themeToggle" title="Toggle Dark Mode"><i
+                        class="fa-solid fa-moon"></i></button>
+                <a href="#generator" class="btn btn-primary btn-sign-in">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <!-- Left Content -->
+                <div class="col-lg-6 hero-text text-center text-lg-start mb-5 mb-lg-0">
+                    <h1 class="display-4 fw-bold mb-4">A Fast Process Makes a Great Certificate</h1>
+                    <p class="text-muted mb-5 fs-5 pe-lg-5">Automatically generate and dispatch personalized
+                        certificates to thousands of recipients in seconds. Upload your CSV and template, and let
+                        Certiflow handle the rest effortlessly.</p>
+                    <div class="d-flex flex-column flex-sm-row justify-content-center justify-content-lg-start gap-3">
+                        <a href="#generator"
+                            class="btn btn-primary px-5 py-3 rounded-pill fw-bold fs-6 shadow-sm hero-btn">Generate
+                            Now</a>
+                        <a href="#features"
+                            class="btn btn-outline-dark px-5 py-3 rounded-pill fw-bold fs-6 hero-btn">How it Works</a>
+                    </div>
+                </div>
+                <!-- Right Visual -->
+                <div class="col-lg-6 position-relative text-center mt-4 mt-lg-0">
+                    <!-- Background aesthetic shapes -->
+                    <div class="floating-shape shape-1"></div>
+                    <div class="floating-shape shape-2"></div>
+                    <!-- Main Image Mask -->
+                    <div class="blob-mask shadow-lg">
+                        <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=800"
+                            alt="Certificates and Success" class="img-fluid hero-img">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Banner -->
+    <section class="stats-banner text-white">
+        <div class="container">
+            <div class="row text-center align-items-center py-4 stats-row">
+                <div class="col-md-4 mb-3 mb-md-0 position-relative stat-item">
+                    <h2 class="fw-bold mb-1">1000+</h2>
+                    <p class="mb-0 fs-6 text-white-50 fw-medium">Certificates Generated</p>
+                </div>
+                <div class="col-md-4 mb-3 mb-md-0 position-relative stat-item center-stat">
+                    <h2 class="fw-bold mb-1">80+</h2>
+                    <p class="mb-0 fs-6 text-white-50 fw-medium">Happy Users</p>
+                </div>
+                <div class="col-md-4 stat-item">
+                    <h2 class="fw-bold mb-1">1000+</h2>
+                    <p class="mb-0 fs-6 text-white-50 fw-medium">Emails Sent</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Us / Features Section -->
+    <section id="features" class="features-section text-center">
+        <div class="container pb-5">
+            <h2 class="fw-bold mb-3 section-title">Why Choice US</h2>
+            <!-- Intentional "Choice US" typo to match your design request or "Choose Us" -->
+            <p class="text-muted w-75 mx-auto mb-5 section-subtitle">We provide the most streamlined, hassle-free bulk
+                certificate generation process with instant automated email delivery for all your events.</p>
+
+            <div class="row g-4 justify-content-center mt-3">
+                <div class="col-6 col-lg-3">
+                    <div class="feature-card shadow-sm">
+                        <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
+                        <h5 class="fw-bold mt-4 mb-0">Fast Generation</h5>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="feature-card shadow-sm">
+                        <div class="feature-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
+                        <h5 class="fw-bold mt-4 mb-0">Auto Delivery</h5>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="feature-card shadow-sm">
+                        <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                        <h5 class="fw-bold mt-4 mb-0">Secure Process</h5>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="feature-card shadow-sm">
+                        <div class="feature-icon"><i class="fa-solid fa-file-zipper"></i></div>
+                        <h5 class="fw-bold mt-4 mb-0">ZIP Archiving</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Generator Form Section -->
+    <section id="generator" class="generator-section bg-container">
+        <div class="container py-5">
+            <div class="row justify-content-center">
+                <div class="col-lg-9">
+                    <div class="card form-card shadow-lg border-0">
+                        <div class="card-body p-4 p-md-5">
+                            <div class="text-center mb-5">
+                                <h3 class="fw-bold form-title">Start Generating Certificates</h3>
+                                <p class="text-muted">Fill out the details below to batch process your certificates</p>
+                            </div>
+
+                            <form id="certForm" enctype="multipart/form-data">
+
+                                <div class="form-section-title mb-3"><i
+                                        class="fa-solid fa-upload me-2 text-primary"></i>1. File Uploads</div>
+                                <div class="row g-4 mb-5">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Upload CSV List</label>
+                                        <div class="file-drop-area">
+                                            <input type="file" class="form-control" name="csvFile" accept=".csv"
+                                                required>
+                                            <div class="mt-2 text-muted small">Must contain 'Name' and 'Email' columns
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Certificate Template</label>
+                                        <div class="file-drop-area">
+                                            <input type="file" class="form-control" name="templateFile"
+                                                accept=".pdf, .png" required>
+                                            <div class="mt-2 text-muted small">Accepted formats: .pdf, .png</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-section-title mb-3"><i
+                                        class="fa-brands fa-google me-2 text-primary"></i>2. Gmail Configuration</div>
+                                <div class="row g-4 mb-5">
+                                    <div class="col-12 text-center mb-1">
+                                        <button type="button" id="googleLoginBtn"
+                                            class="btn btn-outline-dark fs-5 py-2 px-4 rounded-pill fw-bold shadow-sm">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"
+                                                width="24" class="me-2" alt="Google">
+                                            Sign in with Google
+                                        </button>
+                                        <div id="googleProfile" class="d-none mt-3">
+                                            <div
+                                                class="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill fs-6 shadow-sm">
+                                                <i class="fa-solid fa-circle-check me-2"></i>Connected as: <span
+                                                    id="connectedEmail" class="fw-bold"></span>
+                                            </div>
+                                            <button type="button" id="googleLogoutBtn"
+                                                class="btn btn-sm btn-link text-danger ms-2 text-decoration-none">Disconnect</button>
+                                        </div>
+                                    </div>
+                                    <!-- Hidden fields for standard form submission to pick up -->
+                                    <input type="hidden" name="senderEmail" id="hiddenSenderEmail">
+                                    <input type="hidden" name="refreshToken" id="hiddenRefreshToken">
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold">Email Subject</label>
+                                        <input type="text" class="form-control rounded-3 py-2" name="subject"
+                                            value="Your Participation Certificate">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold">Email Body</label>
+                                        <textarea class="form-control rounded-3 py-2" name="body"
+                                            rows="3">Dear [Name], Please find attached your certificate. Thanks for participating!</textarea>
+                                        <div class="form-text mt-2"><i class="fa-solid fa-circle-info"></i> Use
+                                            <code>[Name]</code> to dynamically insert the recipient's name.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-section-title mb-3"><i
+                                        class="fa-solid fa-wand-magic-sparkles me-2 text-primary"></i>3. Appearance &
+                                    Positioning</div>
+                                <div class="row g-4 mb-5 pb-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">Font Size</label>
+                                        <input type="number" class="form-control rounded-3 py-2" name="fontSize"
+                                            value="30">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">X Position</label>
+                                        <input type="number" class="form-control rounded-3 py-2" name="xPos"
+                                            placeholder="Auto Center">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">Y Position</label>
+                                        <input type="number" class="form-control rounded-3 py-2" name="yPos"
+                                            placeholder="Auto Center">
+                                    </div>
+                                </div>
+
+                                <button type="submit" id="submitBtn"
+                                    class="btn btn-primary w-100 py-3 rounded-pill fw-bold fs-5 shadow-sm submit-btn">
+                                    <i class="fa-solid fa-paper-plane me-2"></i> Generate & Send Certificates
+                                </button>
+                            </form>
+
+                            <!-- Progress Section -->
+                            <div id="progressSection" class="mt-5 pt-4 border-top d-none">
+                                <h5 class="text-center mb-4 fw-bold text-dark">Processing Status</h5>
+                                <div class="d-flex justify-content-between mb-2 fw-semibold fs-6 px-1">
+                                    <span class="text-secondary"><i class="fa-solid fa-users me-1"></i> Total: <span
+                                            id="totalStudents" class="text-dark">0</span></span>
+                                    <span class="text-success"><i class="fa-solid fa-check me-1"></i> Sent: <span
+                                            id="sentEmails" class="text-dark">0</span></span>
+                                    <span class="text-danger"><i class="fa-solid fa-xmark me-1"></i> Failed: <span
+                                            id="failedEmails" class="text-dark">0</span></span>
+                                </div>
+                                <div class="progress rounded-pill bg-light" style="height: 28px;">
+                                    <div id="progressBar"
+                                        class="progress-bar progress-bar-striped progress-bar-animated bg-success fw-bold fs-6"
+                                        role="progressbar" style="width: 0%;">0%</div>
+                                </div>
+
+                                <div id="downloadSection" class="text-center mt-5 d-none pb-2">
+                                    <div class="mb-3">
+                                        <div class="success-icon-wrap shadow-sm mx-auto mb-3">
+                                            <i class="fa-solid fa-check text-success fs-2"></i>
+                                        </div>
+                                        <h4 class="text-success fw-bold">All Certificates Generated!</h4>
+                                    </div>
+                                    <a id="downloadBtn" href="#"
+                                        class="btn btn-dark btn-lg px-5 py-3 rounded-pill shadow-sm fw-bold">
+                                        <i class="fa-solid fa-box-archive me-2"></i> Download ZIP archive
+                                    </a>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="site-footer mt-auto pt-5 pb-3">
+        <div class="container py-4">
+            <div class="row gx-lg-5 gy-4">
+                <!-- Column 1: Brand & Developer Info -->
+                <div class="col-lg-5 col-md-12 pe-lg-5">
+                    <h4 class="fw-bold text-white mb-3">
+                        <i class="fa-solid fa-layer-group text-primary me-2"></i>Certiflow
+                    </h4>
+                    <p class="text-white-50 mb-4" style="line-height: 1.8;">
+                        Generate bulk certificates effortlessly and dispatch them securely via automated email.
+                    </p>
+
+                    <div class="developer-info-box ps-3 py-1 mb-4">
+                        <h6 class="text-primary fw-bold mb-1" style="letter-spacing: 1px;">DEVELOPED BY</h6>
+                        <h6 class="text-white fw-bold mb-0">Abhijeet Ravindra Gaikwad</h6>
+                        <small class="text-white-50">argaikwad24@gmail.com</small>
+                    </div>
+
+                    <div class="visitor-counter d-flex gap-1 mt-4">
+                        <span class="counter-digit">0</span>
+                        <span class="counter-digit">0</span>
+                        <span class="counter-digit">0</span>
+                        <span class="counter-digit">1</span>
+                        <span class="counter-digit">7</span>
+                        <span class="counter-digit">7</span>
+                    </div>
+                </div>
+
+                <!-- Column 2: Quick Links -->
+                <div class="col-lg-3 col-md-6 mt-4 mt-lg-0">
+                    <h5 class="fw-bold text-white mb-4">Quick Links</h5>
+                    <ul class="list-unstyled footer-links">
+                        <li class="mb-3"><a href="#" class="text-white-50 text-decoration-none">Home</a></li>
+                        <li class="mb-3"><a href="#features" class="text-white-50 text-decoration-none">Features</a>
+                        </li>
+                        <li class="mb-3"><a href="#generator" class="text-white-50 text-decoration-none">Generate</a>
+                        </li>
+                        <li class="mb-3"><a href="#" class="text-white-50 text-decoration-none">About Us</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Support -->
+                <div class="col-lg-4 col-md-6 mt-4 mt-lg-0">
+                    <h5 class="fw-bold text-white mb-4">Support</h5>
+                    <ul class="list-unstyled footer-links">
+                        <li class="mb-3"><a href="mailto:argaikwad24@gmail.com"
+                                class="text-white-50 text-decoration-none">Email Us</a></li>
+                        <li class="mb-3"><a href="#" class="text-white-50 text-decoration-none">WhatsApp</a></li>
+                        <li class="mb-3"><a href="#" class="text-white-50 text-decoration-none">Call Us</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Copyright -->
+        <div class="footer-bottom py-3 text-center border-top border-secondary mt-3">
+            <div class="container">
+                <small class="text-white-50">
+                    © 2026 Certiflow. All Rights Reserved | Designed with <i
+                        class="fa-solid fa-heart text-primary mx-1"></i> by Abhijeet
+                </small>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Main Script -->
+    <script src="script.js"></script>
+</body>
+
+</html>
