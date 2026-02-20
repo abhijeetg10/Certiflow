@@ -180,78 +180,82 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
         }
     });
 
-    for (const bStudent of students) {
-        const studentName = bStudent.Name || bStudent.name || bStudent.NAME || Object.values(bStudent)[0];
-        const studentEmail = bStudent.Email || bStudent.email || bStudent.EMAIL || Object.values(bStudent)[1];
+    const BATCH_SIZE = 3;
+    for (let i = 0; i < students.length; i += BATCH_SIZE) {
+        const batch = students.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map(async (bStudent) => {
+            const studentName = bStudent.Name || bStudent.name || bStudent.NAME || Object.values(bStudent)[0];
+            const studentEmail = bStudent.Email || bStudent.email || bStudent.EMAIL || Object.values(bStudent)[1];
 
-        if (!studentName || !studentEmail) {
-            jobs[jobId].failed++;
-            jobs[jobId].processed++;
-            continue;
-        }
-
-        try {
-            let pdfDoc;
-            if (isPdf) {
-                pdfDoc = await PDFDocument.load(templateBytes);
-            } else {
-                pdfDoc = await PDFDocument.create();
-                let image;
-                if (templateFile.originalname.toLowerCase().endsWith('.png')) {
-                    image = await pdfDoc.embedPng(templateBytes);
-                } else {
-                    image = await pdfDoc.embedJpg(templateBytes);
-                }
-                const page = pdfDoc.addPage([image.width, image.height]);
-                page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+            if (!studentName || !studentEmail) {
+                if (jobs[jobId]) jobs[jobId].failed++;
+                if (jobs[jobId]) jobs[jobId].processed++;
+                return;
             }
 
-            const pages = pdfDoc.getPages();
-            const firstPage = pages[0];
-            const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-
-            const size = parseFloat(fontSize) || 30;
-            const textWidth = helveticaFont.widthOfTextAtSize(studentName, size);
-            const textHeight = helveticaFont.heightAtSize(size);
-
-            let x = parseFloat(xPos);
-            let y = parseFloat(yPos);
-            if (isNaN(x)) x = (firstPage.getWidth() / 2) - (textWidth / 2);
-            if (isNaN(y)) y = (firstPage.getHeight() / 2) - (textHeight / 2);
-
-            firstPage.drawText(studentName, {
-                x,
-                y,
-                size,
-                font: helveticaFont,
-                color: rgb(0, 0, 0)
-            });
-
-            const pdfBytes = await pdfDoc.save();
-            const fileName = `${studentName.replace(/[^a-zA-Z0-9]/g, '_')}_certificate.pdf`;
-            const filePath = path.join(jobDir, fileName);
-            fs.writeFileSync(filePath, pdfBytes);
-
-            const mailOptions = {
-                from: senderEmail,
-                to: studentEmail,
-                subject: subject || "Your Participation Certificate",
-                text: body ? body.replace('[Name]', studentName) : `Dear ${studentName}, Please find attached your certificate.`,
-                attachments: [
-                    {
-                        filename: fileName,
-                        path: filePath
+            try {
+                let pdfDoc;
+                if (isPdf) {
+                    pdfDoc = await PDFDocument.load(templateBytes);
+                } else {
+                    pdfDoc = await PDFDocument.create();
+                    let image;
+                    if (templateFile.originalname.toLowerCase().endsWith('.png')) {
+                        image = await pdfDoc.embedPng(templateBytes);
+                    } else {
+                        image = await pdfDoc.embedJpg(templateBytes);
                     }
-                ]
-            };
+                    const page = pdfDoc.addPage([image.width, image.height]);
+                    page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+                }
 
-            await transporter.sendMail(mailOptions);
-            jobs[jobId].success++;
-        } catch (error) {
-            console.error(`Error processing ${studentEmail}:`, error);
-            jobs[jobId].failed++;
-        }
-        jobs[jobId].processed++;
+                const pages = pdfDoc.getPages();
+                const firstPage = pages[0];
+                const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+                const size = parseFloat(fontSize) || 30;
+                const textWidth = helveticaFont.widthOfTextAtSize(studentName, size);
+                const textHeight = helveticaFont.heightAtSize(size);
+
+                let x = parseFloat(xPos);
+                let y = parseFloat(yPos);
+                if (isNaN(x)) x = (firstPage.getWidth() / 2) - (textWidth / 2);
+                if (isNaN(y)) y = (firstPage.getHeight() / 2) - (textHeight / 2);
+
+                firstPage.drawText(studentName, {
+                    x,
+                    y,
+                    size,
+                    font: helveticaFont,
+                    color: rgb(0, 0, 0)
+                });
+
+                const pdfBytes = await pdfDoc.save();
+                const fileName = `${studentName.replace(/[^a-zA-Z0-9]/g, '_')}_certificate.pdf`;
+                const filePath = path.join(jobDir, fileName);
+                fs.writeFileSync(filePath, pdfBytes);
+
+                const mailOptions = {
+                    from: senderEmail,
+                    to: studentEmail,
+                    subject: subject || "Your Participation Certificate",
+                    text: body ? body.replace(/\[Name\]/gi, studentName) : `Dear ${studentName}, Please find attached your certificate.`,
+                    attachments: [
+                        {
+                            filename: fileName,
+                            path: filePath
+                        }
+                    ]
+                };
+
+                await transporter.sendMail(mailOptions);
+                if (jobs[jobId]) jobs[jobId].success++;
+            } catch (error) {
+                console.error(`Error processing ${studentEmail}:`, error);
+                if (jobs[jobId]) jobs[jobId].failed++;
+            }
+            if (jobs[jobId]) jobs[jobId].processed++;
+        }));
     }
 
     try {
@@ -260,19 +264,30 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
         const archive = archiver('zip', { zlib: { level: 9 } });
 
         output.on('close', () => {
-            jobs[jobId].status = 'completed';
-            jobs[jobId].zipPath = `/api/download/${jobId}`;
-            fs.rmSync(jobDir, { recursive: true, force: true });
+            if (jobs[jobId]) {
+                jobs[jobId].status = 'completed';
+                jobs[jobId].zipPath = `/api/download/${jobId}`;
+            }
+            try {
+                if (fs.existsSync(jobDir)) {
+                    fs.rmSync(jobDir, { recursive: true, force: true });
+                }
+            } catch (cleanupErr) {
+                console.error('Directory cleanup failed:', cleanupErr);
+            }
         });
 
-        archive.on('error', (err) => { throw err; });
+        archive.on('error', (err) => {
+            console.error('Archiver error:', err);
+            if (jobs[jobId]) jobs[jobId].status = 'error';
+        });
 
         archive.pipe(output);
         archive.directory(jobDir, false);
         await archive.finalize();
     } catch (err) {
         console.error('Zip generation failed:', err);
-        jobs[jobId].status = 'error';
+        if (jobs[jobId]) jobs[jobId].status = 'error';
     }
 }
 

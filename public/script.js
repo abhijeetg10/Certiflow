@@ -109,7 +109,26 @@ function pollStatus(jobId) {
     const interval = setInterval(async () => {
         try {
             const res = await fetch(`/api/status/${jobId}`);
+
+            if (!res.ok) {
+                clearInterval(interval);
+                alert('Oops! The server process restarted or interrupted. This can happen on free hosting if memory limits or timeouts are reached. Please refresh the page. If it happens again, try formatting your image template to a lighter file size!');
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '🚀 Generate & Send Certificates';
+                return;
+            }
+
             const data = await res.json();
+
+            if (data.error) {
+                clearInterval(interval);
+                alert('Status check failed: ' + data.error);
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '🚀 Generate & Send Certificates';
+                return;
+            }
 
             document.getElementById('totalStudents').innerText = data.total;
             document.getElementById('sentEmails').innerText = data.success;
