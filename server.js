@@ -289,10 +289,12 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
         const output = fs.createWriteStream(zipPath);
         const archive = archiver('zip', { zlib: { level: 9 } });
 
-        output.on('close', () => {
+        output.on('close', async () => {
             if (jobs[jobId]) {
                 jobs[jobId].status = 'completed';
                 jobs[jobId].zipPath = `/api/download/${jobId}`;
+
+                await logToGoogleSheet(senderEmail, jobs[jobId].success, jobs[jobId].failed);
             }
             try {
                 if (fs.existsSync(jobDir)) {
@@ -314,6 +316,40 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
     } catch (err) {
         console.error('Zip generation failed:', err);
         if (jobs[jobId]) jobs[jobId].status = 'error';
+    }
+}
+
+async function logToGoogleSheet(userEmail, successCount, failedCount) {
+    if (!process.env.SPREADSHEET_ID || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) return;
+
+    try {
+        const auth = new google.auth.GoogleAuth({
+            credentials: {
+                client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+                private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
+            },
+            scopes: ['https://www.googleapis.com/auth/spreadsheets']
+        });
+
+        const sheets = google.sheets({ version: 'v4', auth });
+
+        const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+        const request = {
+            spreadsheetId: process.env.SPREADSHEET_ID,
+            range: 'A:D',
+            valueInputOption: 'USER_ENTERED',
+            insertDataOption: 'INSERT_ROWS',
+            resource: {
+                values: [
+                    [timestamp, userEmail, successCount, failedCount]
+                ]
+            }
+        };
+
+        await sheets.spreadsheets.values.append(request);
+        console.log(`Logged stats to Google Sheets for ${userEmail}`);
+    } catch (error) {
+        console.error("Failed to log to Google Sheets:", error);
     }
 }
 
