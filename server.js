@@ -170,6 +170,9 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
 
     const transporter = nodemailer.createTransport({
         service: 'gmail',
+        pool: true,
+        maxConnections: 3,
+        maxMessages: 100,
         auth: {
             type: 'OAuth2',
             user: senderEmail,
@@ -183,6 +186,7 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
     const BATCH_SIZE = 3;
     for (let i = 0; i < students.length; i += BATCH_SIZE) {
         const batch = students.slice(i, i + BATCH_SIZE);
+
         await Promise.all(batch.map(async (bStudent) => {
             const studentName = bStudent.Name || bStudent.name || bStudent.NAME || Object.values(bStudent)[0];
             const studentEmail = bStudent.Email || bStudent.email || bStudent.EMAIL || Object.values(bStudent)[1];
@@ -251,12 +255,19 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
                 await transporter.sendMail(mailOptions);
                 if (jobs[jobId]) jobs[jobId].success++;
             } catch (error) {
-                console.error(`Error processing ${studentEmail}:`, error);
+                console.error(`Error processing ${studentEmail}:`, error.message || error);
                 if (jobs[jobId]) jobs[jobId].failed++;
             }
             if (jobs[jobId]) jobs[jobId].processed++;
         }));
+
+        // Add a 1.5 second delay between batches to respect Gmail rate limits
+        if (i + BATCH_SIZE < students.length) {
+            await new Promise(resolve => setTimeout(resolve, 1500));
+        }
     }
+
+    transporter.close();
 
     try {
         const zipPath = path.join(GENERATED_DIR, `${jobId}.zip`);
