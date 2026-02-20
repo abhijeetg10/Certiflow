@@ -183,6 +183,24 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
         }
     });
 
+    // Cache the base PDF template OUTSIDE the loop to prevent OOM memory crashes on Render
+    let basePdfDoc;
+    if (isPdf) {
+        basePdfDoc = await PDFDocument.load(templateBytes);
+    } else {
+        basePdfDoc = await PDFDocument.create();
+        let image;
+        if (templateFile.originalname.toLowerCase().endsWith('.png')) {
+            image = await basePdfDoc.embedPng(templateBytes);
+        } else {
+            image = await basePdfDoc.embedJpg(templateBytes);
+        }
+        const page = basePdfDoc.addPage([image.width, image.height]);
+        page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+    }
+
+    const helveticaFont = await basePdfDoc.embedFont(StandardFonts.Helvetica);
+
     const BATCH_SIZE = 3;
     for (let i = 0; i < students.length; i += BATCH_SIZE) {
         const batch = students.slice(i, i + BATCH_SIZE);
@@ -198,28 +216,18 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
             }
 
             try {
-                let pdfDoc;
-                if (isPdf) {
-                    pdfDoc = await PDFDocument.load(templateBytes);
-                } else {
-                    pdfDoc = await PDFDocument.create();
-                    let image;
-                    if (templateFile.originalname.toLowerCase().endsWith('.png')) {
-                        image = await pdfDoc.embedPng(templateBytes);
-                    } else {
-                        image = await pdfDoc.embedJpg(templateBytes);
-                    }
-                    const page = pdfDoc.addPage([image.width, image.height]);
-                    page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
-                }
+                // Instatiate a blank document and securely copy the cached template
+                const pdfDoc = await PDFDocument.create();
+                const copiedPages = await pdfDoc.copyPages(basePdfDoc, [0]);
+                const firstPage = copiedPages[0];
+                pdfDoc.addPage(firstPage);
 
-                const pages = pdfDoc.getPages();
-                const firstPage = pages[0];
-                const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+                // We need to re-embed the font for the cloned document instance
+                const currentFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
                 const size = parseFloat(fontSize) || 30;
-                const textWidth = helveticaFont.widthOfTextAtSize(studentName, size);
-                const textHeight = helveticaFont.heightAtSize(size);
+                const textWidth = currentFont.widthOfTextAtSize(studentName, size);
+                const textHeight = currentFont.heightAtSize(size);
 
                 let x = parseFloat(xPos);
                 let y = parseFloat(yPos);
@@ -230,7 +238,7 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
                     x,
                     y,
                     size,
-                    font: helveticaFont,
+                    font: currentFont,
                     color: rgb(0, 0, 0)
                 });
 
