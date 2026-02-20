@@ -169,21 +169,11 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
     }
 
     const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        pool: true,
-        maxConnections: 3,
-        maxMessages: 100,
-        auth: {
-            type: 'OAuth2',
-            user: senderEmail,
-            clientId: process.env.CLIENT_ID,
-            clientSecret: process.env.CLIENT_SECRET,
-            refreshToken: refreshToken,
-            accessToken: accessToken
-        }
+        streamTransport: true,
+        newline: 'windows'
     });
+
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
     // Cache the base PDF template OUTSIDE the loop to prevent OOM memory crashes on Render
     let basePdfDoc;
@@ -262,7 +252,22 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
                     ]
                 };
 
-                await transporter.sendMail(mailOptions);
+                const info = await transporter.sendMail(mailOptions);
+                let raw = '';
+                for await (const chunk of info.message) {
+                    raw += chunk.toString();
+                }
+                const encodedMessage = Buffer.from(raw).toString('base64')
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_')
+                    .replace(/=+$/, '');
+
+                await gmail.users.messages.send({
+                    userId: 'me',
+                    requestBody: {
+                        raw: encodedMessage
+                    }
+                });
                 if (jobs[jobId]) jobs[jobId].success++;
             } catch (error) {
                 console.error(`Error processing ${studentEmail}:`, error.message || error);
@@ -277,7 +282,7 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
         }
     }
 
-    transporter.close();
+    // transorter.close() is not needed for streamTransport
 
     try {
         const zipPath = path.join(GENERATED_DIR, `${jobId}.zip`);
