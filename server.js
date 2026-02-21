@@ -373,6 +373,51 @@ app.get('/api/download/:jobId', (req, res) => {
     res.download(zipPath);
 });
 
+app.post('/api/feedback', async (req, res) => {
+    const { name, message } = req.body;
+
+    if (!message) {
+        return res.status(400).json({ error: 'Feedback message is required' });
+    }
+
+    if (!process.env.SPREADSHEET_ID || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+        console.error("Missing Google Sheets credentials for feedback");
+        return res.status(500).json({ error: 'Server configuration error' });
+    }
+
+    try {
+        const auth = new google.auth.GoogleAuth({
+            credentials: {
+                client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+                private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
+            },
+            scopes: ['https://www.googleapis.com/auth/spreadsheets']
+        });
+
+        const sheets = google.sheets({ version: 'v4', auth });
+        const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+        // Note: Appending to columns F, G, H so it doesn't conflict with certificate logs (A, B, C, D)
+        const request = {
+            spreadsheetId: process.env.SPREADSHEET_ID,
+            range: 'F:H',
+            valueInputOption: 'USER_ENTERED',
+            insertDataOption: 'INSERT_ROWS',
+            resource: {
+                values: [
+                    [timestamp, name, message]
+                ]
+            }
+        };
+
+        await sheets.spreadsheets.values.append(request);
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Failed to log feedback to Google Sheets:', error);
+        res.status(500).json({ error: 'Failed to submit feedback' });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 });

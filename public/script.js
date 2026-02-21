@@ -157,3 +157,42 @@ function pollStatus(jobId) {
         }
     }, 1500);
 }
+
+// Feedback Form Logic
+document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById('feedbackName').value.trim() || 'Anonymous';
+    const message = document.getElementById('feedbackMessage').value.trim();
+    const btn = document.getElementById('feedbackBtn');
+    const successMsg = document.getElementById('feedbackSuccess');
+    const errorMsg = document.getElementById('feedbackError');
+
+    if (!message) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Submitting...';
+    successMsg.classList.add('d-none');
+    errorMsg.classList.add('d-none');
+
+    try {
+        const res = await fetch('/api/feedback', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, message })
+        });
+
+        if (!res.ok) throw new Error('Failed to submit feedback');
+
+        successMsg.classList.remove('d-none');
+        document.getElementById('feedbackForm').reset();
+    } catch (err) {
+        errorMsg.innerText = err.message || 'Something went wrong. Please try again.';
+        errorMsg.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Submit Feedback';
+    }
+});
