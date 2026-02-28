@@ -310,7 +310,7 @@ function createFieldRow() {
 
     // Create corresponding overlay
     const overlay = document.createElement('div');
-    overlay.className = 'draggable-item position-absolute user-select-none font-pinyon';
+    overlay.className = 'draggable-text position-absolute user-select-none font-pinyon';
     overlay.style.cursor = 'grab';
     overlay.style.display = previewContainer.style.display === 'none' ? 'none' : 'block';
     overlay.id = `overlay_${id}`;
