@@ -116,8 +116,8 @@ document.getElementById('certForm').addEventListener('submit', async (e) => {
     });
 
     console.log("SENDING SCALED PAYLOAD FIELDS:", payloadFields);
-    formData.append('fieldsPayload', JSON.stringify(payloadFields));
-    formData.append('skipEmailToggle', isSkipEmail ? 'true' : 'false');
+    formData.set('fieldsPayload', JSON.stringify(payloadFields));
+    formData.set('skipEmailToggle', isSkipEmail ? 'true' : 'false');
 
     try {
         const res = await fetch('/api/upload', {
