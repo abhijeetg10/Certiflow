@@ -280,6 +280,7 @@ function createFieldRow() {
             <label class="form-label fw-semibold fs-6 mb-1">Font Family</label>
             <select class="form-select rounded-3 py-1" id="fontFamily_${id}">
                 <option value="Helvetica">Helvetica (Default)</option>
+                <option value="TimesNewRomanBold">Times New Roman Bold</option>
                 <option value="PinyonScript">Pinyon Script</option>
                 <option value="GreatVibes">Great Vibes</option>
                 <option value="AlexBrush">Alex Brush</option>
@@ -360,7 +361,14 @@ function updateTextStyle(id) {
     overlay.style.color = document.getElementById(`textColor_${id}`).value;
 
     const family = document.getElementById(`fontFamily_${id}`).value;
-    if (family === 'PinyonScript') field.overlay.style.fontFamily = "'Pinyon Script', cursive";
+
+    field.overlay.style.fontWeight = 'normal';
+
+    if (family === 'TimesNewRomanBold') {
+        field.overlay.style.fontFamily = "'Times New Roman', Times, serif";
+        field.overlay.style.fontWeight = 'bold';
+    }
+    else if (family === 'PinyonScript') field.overlay.style.fontFamily = "'Pinyon Script', cursive";
     else if (family === 'GreatVibes') field.overlay.style.fontFamily = "'Great Vibes', cursive";
     else if (family === 'AlexBrush') field.overlay.style.fontFamily = "'Alex Brush', cursive";
     else if (family === 'DancingScript') field.overlay.style.fontFamily = "'Dancing Script', cursive";
@@ -376,17 +384,26 @@ function updateTextStyle(id) {
 
 function initDraggable(element, xInput, yInput) {
     let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
 
     element.addEventListener('mousedown', (e) => {
         isDragging = true;
         element.style.cursor = 'grabbing';
+
+        const elRect = element.getBoundingClientRect();
+        const centerX = elRect.left + (elRect.width / 2);
+        const centerY = elRect.top + (elRect.height / 2);
+
+        offsetX = e.clientX - centerX;
+        offsetY = e.clientY - centerY;
     });
 
     document.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
         const rect = templateCanvas.getBoundingClientRect();
-        let x = e.clientX - rect.left;
-        let y = e.clientY - rect.top;
+        let x = (e.clientX - offsetX) - rect.left;
+        let y = (e.clientY - offsetY) - rect.top;
 
         if (x < 0) x = 0;
         if (y < 0) y = 0;

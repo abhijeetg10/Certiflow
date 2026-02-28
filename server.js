@@ -339,6 +339,11 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
                             fontCache[field.fontFamily] = await pdfDoc.embedFont(loadedCustomFonts[field.fontFamily]);
                         }
                         currentFont = fontCache[field.fontFamily];
+                    } else if (field.fontFamily === 'TimesNewRomanBold') {
+                        if (!fontCache['TimesNewRomanBold']) {
+                            fontCache['TimesNewRomanBold'] = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+                        }
+                        currentFont = fontCache['TimesNewRomanBold'];
                     } else {
                         if (!fontCache['Helvetica']) {
                             fontCache['Helvetica'] = await pdfDoc.embedFont(StandardFonts.Helvetica);
