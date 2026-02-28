@@ -67,16 +67,24 @@ document.getElementById('certForm').addEventListener('submit', async (e) => {
     document.getElementById('failedEmails').innerText = '0';
 
     const formData = new FormData(form);
-    const payloadFields = fields.map(f => ({
-        name: document.getElementById(`fieldName_${f.id}`).value || '[Empty Field]',
-        fontSize: document.getElementById(`fontSize_${f.id}`).value,
-        fontFamily: document.getElementById(`fontFamily_${f.id}`).value,
-        textColor: document.getElementById(`textColor_${f.id}`).value,
-        xPos: document.getElementById(`xPos_${f.id}`).value,
-        yPos: document.getElementById(`yPos_${f.id}`).value
-    }));
+    const payloadFields = fields.map(f => {
+        let scaledFontSize = 30;
+        let rawFontSize = parseFloat(document.getElementById(`fontSize_${f.id}`).value) || 30;
+        if (currentScale && currentScale > 0) {
+            scaledFontSize = rawFontSize / currentScale;
+        }
 
-    console.log("SENDING PAYLOAD FIELDS:", payloadFields);
+        return {
+            name: document.getElementById(`fieldName_${f.id}`).value || '[Empty Field]',
+            fontSize: scaledFontSize.toFixed(1),
+            fontFamily: document.getElementById(`fontFamily_${f.id}`).value,
+            textColor: document.getElementById(`textColor_${f.id}`).value,
+            xPos: document.getElementById(`xPos_${f.id}`).value,
+            yPos: document.getElementById(`yPos_${f.id}`).value
+        };
+    });
+
+    console.log("SENDING SCALED PAYLOAD FIELDS:", payloadFields);
     formData.append('fieldsPayload', JSON.stringify(payloadFields));
 
     try {
