@@ -456,7 +456,7 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
                 jobs[jobId].status = 'completed';
                 jobs[jobId].zipPath = `/api/download/${jobId}`;
 
-                await logToGoogleSheet(senderEmail, jobs[jobId].success, jobs[jobId].failed);
+                await logToGoogleSheet(senderEmail || 'ZIP Download [Skipped Email]', jobs[jobId].success, jobs[jobId].failed);
             }
             try {
                 if (fs.existsSync(jobDir)) {
@@ -483,6 +483,7 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
 
 async function logToGoogleSheet(userEmail, successCount, failedCount) {
     if (!process.env.SPREADSHEET_ID || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) return;
+    if (!userEmail) userEmail = 'ZIP Download [Skipped Email]';
 
     try {
         const auth = new google.auth.GoogleAuth({
