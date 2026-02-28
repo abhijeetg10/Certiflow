@@ -15,20 +15,36 @@
         content="Generate and share certificates on a single click for free. Automate your event certificates instantly.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://certiflow-os7f.onrender.com/">
+    <meta property="og:image"
+        content="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=800">
+
+    <!-- Twitter / X Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Certiflow - Free Bulk Certificate Generator">
+    <meta name="twitter:description"
+        content="Generate and share certificates on a single click for free. Automate your event certificates instantly.">
+    <meta name="twitter:image"
+        content="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=800">
+
+    <!-- SEO Best Practices -->
+    <link rel="canonical" href="https://certiflow-os7f.onrender.com/">
+    <meta name="robots" content="index, follow">
 
     <title>Certiflow - Free Bulk Certificate Generator</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
-    <!-- Fonts: Poppins for headings, Inter for body -->
+    <!-- Fonts: Poppins for headings, Inter for body, plus 10 custom cursive fonts -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Pinyon+Script&family=Great+Vibes&family=Alex+Brush&family=Dancing+Script&family=Parisienne&family=Playball&family=Rochester&family=Satisfy&family=Tangerine&family=Allura&family=Mr+De+Haviland&display=swap"
         rel="stylesheet">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- AOS Animation CSS -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
@@ -85,7 +101,7 @@
                     <!-- Main Image Mask -->
                     <div class="blob-mask shadow-lg">
                         <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=800"
-                            alt="Certificates and Success" class="img-fluid hero-img">
+                            alt="Student holding a printed certificate" class="img-fluid hero-img" loading="lazy">
                     </div>
                 </div>
             </div>
@@ -167,11 +183,11 @@
                                         class="fa-solid fa-upload me-2 text-primary"></i>1. File Uploads</div>
                                 <div class="row g-4 mb-5">
                                     <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Upload CSV List</label>
+                                        <label class="form-label fw-semibold">Upload Data List</label>
                                         <div class="file-drop-area">
-                                            <input type="file" class="form-control" name="csvFile" accept=".csv"
-                                                required>
-                                            <div class="mt-2 text-muted small">Must contain 'Name' and 'Email' columns
+                                            <input type="file" class="form-control" name="dataFile" id="dataFileInput"
+                                                accept=".csv, .xlsx, .xls, .pdf" required>
+                                            <div class="mt-2 text-muted small">Accepted formats: .csv, .xlsx, .pdf
                                             </div>
                                         </div>
                                     </div>
@@ -179,8 +195,8 @@
                                         <label class="form-label fw-semibold">Certificate Template</label>
                                         <div class="file-drop-area">
                                             <input type="file" class="form-control" name="templateFile"
-                                                accept=".pdf, .png" required>
-                                            <div class="mt-2 text-muted small">Accepted formats: .pdf, .png</div>
+                                                id="templateFileInput" accept=".pdf, .png, .jpg, .jpeg" required>
+                                            <div class="mt-2 text-muted small">Accepted formats: .pdf, .png, .jpg</div>
                                         </div>
                                     </div>
                                 </div>
@@ -224,24 +240,65 @@
                                     </div>
                                 </div>
 
-                                <div class="form-section-title mb-3"><i
-                                        class="fa-solid fa-wand-magic-sparkles me-2 text-primary"></i>3. Appearance &
-                                    Positioning</div>
-                                <div class="row g-4 mb-5 pb-2">
-                                    <div class="col-md-4">
-                                        <label class="form-label fw-semibold">Font Size</label>
-                                        <input type="number" class="form-control rounded-3 py-2" name="fontSize"
-                                            value="30">
+                                <div class="form-section-title mb-3 d-flex justify-content-between align-items-center">
+                                    <span><i class="fa-solid fa-wand-magic-sparkles me-2 text-primary"></i>3. Appearance
+                                        & Positioning</span>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill mb-1"
+                                        id="addFieldBtn"><i class="fa-solid fa-plus me-1"></i> Add Field</button>
+                                </div>
+                                <div id="fieldsContainer" class="mb-4">
+                                    <!-- Dynamic fields will be injected here -->
+                                </div>
+
+                                <div class="form-section-title mb-3 border-top pt-4">
+                                    <i class="fa-solid fa-qrcode me-2 text-primary"></i>4. Security & Verification
+                                </div>
+                                <div class="row g-3 mb-4 bg-light rounded border p-3 m-0 shadow-sm">
+                                    <div class="col-md-6 d-flex align-items-center">
+                                        <div class="form-check form-switch fs-5">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                id="enableQrCode" name="enableQrCode">
+                                            <label class="form-check-label ms-2" for="enableQrCode">Enable QR Code
+                                                Validation</label>
+                                        </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label fw-semibold">X Position</label>
-                                        <input type="number" class="form-control rounded-3 py-2" name="xPos"
-                                            placeholder="Auto Center">
+                                    <div class="col-md-6 d-none" id="qrSettingsDiv">
+                                        <div class="d-flex gap-2 align-items-end">
+                                            <div class="w-50">
+                                                <label class="form-label fw-semibold mb-1 fs-6">Position X</label>
+                                                <input type="number" step="0.1" class="form-control rounded-3 py-1"
+                                                    name="qrXPos" id="qrXPosInput" readonly>
+                                            </div>
+                                            <div class="w-50">
+                                                <label class="form-label fw-semibold mb-1 fs-6">Position Y</label>
+                                                <input type="number" step="0.1" class="form-control rounded-3 py-1"
+                                                    name="qrYPos" id="qrYPosInput" readonly>
+                                            </div>
+                                            <input type="hidden" id="pdfWidthInput">
+                                            <input type="hidden" id="pdfHeightInput">
+                                            <input type="hidden" id="fieldsPayload" name="fieldsPayload">
+                                        </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label fw-semibold">Y Position</label>
-                                        <input type="number" class="form-control rounded-3 py-2" name="yPos"
-                                            placeholder="Auto Center">
+                                </div>
+
+                                <!-- Visual Preview Container -->
+                                <div class="preview-container-wrapper mb-5 text-center">
+                                    <label class="form-label fw-semibold d-block text-start">Visual Placement
+                                        Preview</label>
+                                    <p class="text-muted small text-start mb-2"><i class="fa-solid fa-info-circle"></i>
+                                        Upload a template first. Then drag the text below to position it perfectly.
+                                        Note: Background will be scaled down for preview.</p>
+                                    <div id="previewContainer"
+                                        class="preview-container border rounded bg-light position-relative d-inline-block overflow-hidden"
+                                        style="display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                                        <canvas id="templateCanvas"></canvas>
+                                        <!-- Draggable field overlays will be injected here via JS -->
+                                        <div id="qrOverlay"
+                                            class="position-absolute border border-success bg-white bg-opacity-75 p-1 d-none"
+                                            style="width:100px; height:100px; cursor:grab; transform:translate(-50%, -50%); z-index:15;">
+                                            <i class="fa-solid fa-qrcode text-success w-100 h-100 d-flex align-items-center justify-content-center"
+                                                style="font-size:3rem;"></i>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -282,6 +339,85 @@
                                 </div>
                             </div>
 
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    </section>
+
+    <!-- Testimonials / Community Feedback Section -->
+    <section class="testimonials-section py-5">
+        <div class="container py-4">
+            <div class="text-center mb-5" data-aos="fade-up">
+                <h3 class="fw-bold section-title">Built with the Community</h3>
+                <p class="text-muted">We actively listen to user feedback to make Certiflow better for everyone.</p>
+            </div>
+
+            <div class="row g-4 justify-content-center">
+                <!-- Testimonial 1 -->
+                <div class="col-md-6 col-lg-5" data-aos="fade-up" data-aos-delay="100">
+                    <div
+                        class="card testimonial-card border-0 shadow-sm h-100 rounded-4 overflow-hidden position-relative p-4">
+                        <div class="card-body">
+                            <i
+                                class="fa-solid fa-quote-left text-primary fs-1 opacity-25 position-absolute top-0 start-0 mt-3 ms-3"></i>
+                            <div class="d-flex align-items-center mb-3 position-relative z-1">
+                                <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-3"
+                                    style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                    SP
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0">Shrivardhan Patil</h6>
+                                    <small class="text-muted">User Request</small>
+                                </div>
+                            </div>
+                            <p class="mb-3 fst-italic text-secondary z-1 position-relative">
+                                "The app is great, but there are no different font options available, particularly for
+                                beautiful cursive styles like Pinyon Script."
+                            </p>
+                            <div class="feedback-resolution bg-success-subtle p-3 rounded-3 mt-auto">
+                                <h6 class="text-success fw-bold mb-1"><i class="fa-solid fa-bolt me-2"></i> How we fixed
+                                    it:</h6>
+                                <p class="small text-dark mb-0">We completely overhauled the font engine and added
+                                    <strong>11 custom cursive fonts</strong> (including Pinyon Script, Great Vibes, and
+                                    Dancing Script), allowing deep typographic customization!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 2 -->
+                <div class="col-md-6 col-lg-5" data-aos="fade-up" data-aos-delay="200">
+                    <div
+                        class="card testimonial-card border-0 shadow-sm h-100 rounded-4 overflow-hidden position-relative p-4">
+                        <div class="card-body">
+                            <i
+                                class="fa-solid fa-quote-left text-primary fs-1 opacity-25 position-absolute top-0 start-0 mt-3 ms-3"></i>
+                            <div class="d-flex align-items-center mb-3 position-relative z-1">
+                                <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-3"
+                                    style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                    AJ
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0">Aditya Jagtap</h6>
+                                    <small class="text-muted">User Request</small>
+                                </div>
+                            </div>
+                            <p class="mb-3 fst-italic text-secondary z-1 position-relative">
+                                "Users don't understand where the name will get pasted. Add visual cues so we can see
+                                exactly where the names are going instead of blind guessing!"
+                            </p>
+                            <div class="feedback-resolution bg-success-subtle p-3 rounded-3 mt-auto">
+                                <h6 class="text-success fw-bold mb-1"><i class="fa-solid fa-bolt me-2"></i> How we fixed
+                                    it:</h6>
+                                <p class="small text-dark mb-0">We built a complete <strong>Visual Drag & Drop
+                                        Engine</strong>! You can now see your live template, add unlimited text blocks,
+                                    and natively drag them into exact positions before generating.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -336,8 +472,8 @@
             <div class="row gx-lg-5 gy-4">
                 <!-- Column 1: Brand & Developer Info -->
                 <div class="col-lg-5 col-md-12 pe-lg-5">
-                    <h4 class="fw-bold text-white mb-3">
-                        <i class="fa-solid fa-layer-group text-primary me-2"></i>Certiflow
+                    <h4 class="fw-bold brand-logo mb-3">
+                        <i class="fa-solid fa-layer-group"></i>Certiflow
                     </h4>
                     <p class="text-white-50 mb-4" style="line-height: 1.8;">
                         Generate bulk certificates effortlessly and dispatch them securely via automated email.
@@ -347,15 +483,6 @@
                         <h6 class="text-primary fw-bold mb-1" style="letter-spacing: 1px;">DEVELOPED BY</h6>
                         <h6 class="text-white fw-bold mb-0">Abhijeet Ravindra Gaikwad</h6>
                         <small class="text-white-50">argaikwad24@gmail.com</small>
-                    </div>
-
-                    <div class="visitor-counter d-flex gap-1 mt-4">
-                        <span class="counter-digit">0</span>
-                        <span class="counter-digit">0</span>
-                        <span class="counter-digit">0</span>
-                        <span class="counter-digit">1</span>
-                        <span class="counter-digit">7</span>
-                        <span class="counter-digit">7</span>
                     </div>
                 </div>
 
@@ -379,9 +506,14 @@
                         <li class="mb-3"><a href="mailto:argaikwad24@gmail.com"
                                 class="text-white-50 text-decoration-none"><i
                                     class="fa-solid fa-envelope me-2"></i>argaikwad24@gmail.com</a></li>
-                        <li class="mb-3"><a href="https://wa.me/917745877951" class="text-white-50 text-decoration-none"
-                                target="_blank"><i class="fa-brands fa-whatsapp me-2"></i>+91 7745877951</a></li>
-                        <li class="mb-3"><a href="tel:+917745877951" class="text-white-50 text-decoration-none"><i
+                        <li class="mb-3 mt-4">
+                            <a href="https://wa.me/917745877951"
+                                class="btn btn-success text-white text-decoration-none fw-bold shadow-sm d-inline-flex align-items-center py-2 px-4 rounded-pill whatsapp-footer-btn"
+                                target="_blank">
+                                <i class="fa-brands fa-whatsapp fs-4 me-2"></i>Chat on WhatsApp
+                            </a>
+                        </li>
+                        <li class="mb-3 mt-3"><a href="tel:+917745877951" class="text-white-50 text-decoration-none"><i
                                     class="fa-solid fa-phone me-2"></i>+91 7745877951</a></li>
                     </ul>
                 </div>
@@ -399,10 +531,25 @@
         </div>
     </footer>
 
+    <!-- PDF.js for client-side manipulation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
+
     <!-- Bootstrap Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- AOS Animation Script -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <!-- Main Script -->
     <script src="script.js"></script>
+
+    <!-- Initialize AOS -->
+    <script>
+        AOS.init({
+            duration: 800,
+            once: true,
+            offset: 50
+        });
+    </script>
 </body>
 
 </html>

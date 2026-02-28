@@ -395,26 +395,6 @@ input[type="file"]::file-selector-button:hover {
     border-left: 3px solid var(--primary);
 }
 
-.visitor-counter {
-    background-color: transparent;
-}
-
-.counter-digit {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 36px;
-    background: linear-gradient(180deg, #fcd34d 0%, #fbbf24 40%, #d97706 100%);
-    /* Gold/Yellow gradient matching image */
-    color: #78350f;
-    font-weight: 800;
-    font-size: 1.2rem;
-    border-radius: 4px;
-    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4), 0 2px 4px rgba(0, 0, 0, 0.5);
-    text-shadow: 0px 1px 1px rgba(255, 255, 255, 0.5);
-    border: 1px solid #b45309;
-}
 
 .footer-links a {
     transition: color 0.2s ease, transform 0.2s ease;
@@ -438,4 +418,101 @@ input[type="file"]::file-selector-button:hover {
 
 [data-bs-theme='dark'] .footer-bottom {
     background-color: #0d0d0d;
+}
+
+/* --- Visual Preview Area --- */
+.preview-container {
+    max-width: 100%;
+    margin: 0 auto;
+    border: 1px solid #ccc;
+}
+
+#templateCanvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.draggable-text {
+    z-index: 10;
+    white-space: nowrap;
+    line-height: 1;
+    transform: translate(-50%, -50%);
+    /* Center grab point to exact X/Y */
+    padding: 2px 5px;
+    border: 1px dashed rgba(0, 0, 0, 0.3);
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    transition: box-shadow 0.2s, background-color 0.2s;
+}
+
+.draggable-text:active {
+    cursor: grabbing !important;
+    border: 1px solid var(--primary);
+    background-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.font-pinyon {
+    font-family: 'Pinyon Script', cursive;
+}
+
+/* --- Testimonials Section --- */
+.testimonials-section {
+    background-color: #f8f9fa;
+    position: relative;
+}
+
+[data-bs-theme="dark"] .testimonials-section {
+    background-color: #1a1e23;
+}
+
+.testimonial-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-bs-theme="dark"] .testimonial-card {
+    background-color: var(--surface-dark) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.testimonial-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-bs-theme="dark"] .testimonial-card:hover {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4) !important;
+}
+
+.avatar {
+    box-shadow: 0 4px 10px rgba(249, 79, 79, 0.3);
+    background-color: var(--primary) !important;
+}
+
+.feedback-resolution {
+    border-left: 4px solid #198754;
+}
+
+[data-bs-theme="dark"] .feedback-resolution {
+    background-color: rgba(25, 135, 84, 0.1) !important;
+}
+
+[data-bs-theme="dark"] .testimonial-card p.small.text-dark {
+    color: #e0e0e0 !important;
+}
+
+/* --- WhatsApp Footer Button --- */
+.whatsapp-footer-btn {
+    transition: all 0.3s ease;
+    background-color: #25D366 !important;
+    border-color: #25D366 !important;
+}
+
+.whatsapp-footer-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4) !important;
+    background-color: #128C7E !important;
+    border-color: #128C7E !important;
 }

@@ -39,24 +39,7 @@ document.getElementById('googleLogoutBtn').addEventListener('click', () => {
     document.getElementById('connectedEmail').innerText = '';
 });
 
-// Fetch and set real-time visitor count
-async function initVisitorCount() {
-    try {
-        const res = await fetch('/api/visitor-count');
-        const data = await res.json();
-        const countStr = data.count.toString().padStart(6, '0');
-        const digitSpans = document.querySelectorAll('.counter-digit');
-
-        if (digitSpans.length === 6) {
-            for (let i = 0; i < 6; i++) {
-                digitSpans[i].innerText = countStr[i];
-            }
-        }
-    } catch (err) {
-        console.error("Failed to fetch visitor count:", err);
-    }
-}
-initVisitorCount();
+// Visitor count functionality removed per user request
 
 document.getElementById('certForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -84,6 +67,16 @@ document.getElementById('certForm').addEventListener('submit', async (e) => {
     document.getElementById('failedEmails').innerText = '0';
 
     const formData = new FormData(form);
+    const payloadFields = fields.map(f => ({
+        name: document.getElementById(`fieldName_${f.id}`).value || '[Empty Field]',
+        fontSize: document.getElementById(`fontSize_${f.id}`).value,
+        fontFamily: document.getElementById(`fontFamily_${f.id}`).value,
+        textColor: document.getElementById(`textColor_${f.id}`).value,
+        xPos: document.getElementById(`xPos_${f.id}`).value,
+        yPos: document.getElementById(`yPos_${f.id}`).value
+    }));
+
+    formData.append('fieldsPayload', JSON.stringify(payloadFields));
 
     try {
         const res = await fetch('/api/upload', {
@@ -196,3 +189,277 @@ document.getElementById('feedbackForm').addEventListener('submit', async (e) => 
         btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Submit Feedback';
     }
 });
+
+// --- Visual Preview Logic & Multiple Fields ---
+const templateFileInput = document.getElementById('templateFileInput');
+const previewContainer = document.getElementById('previewContainer');
+const templateCanvas = document.getElementById('templateCanvas');
+const pdfWidthInput = document.getElementById('pdfWidthInput');
+const pdfHeightInput = document.getElementById('pdfHeightInput');
+const fieldsContainer = document.getElementById('fieldsContainer');
+const addFieldBtn = document.getElementById('addFieldBtn');
+
+const enableQrCodeCheckbox = document.getElementById('enableQrCode');
+const qrSettingsDiv = document.getElementById('qrSettingsDiv');
+const qrOverlay = document.getElementById('qrOverlay');
+const qrXPosInput = document.getElementById('qrXPosInput');
+const qrYPosInput = document.getElementById('qrYPosInput');
+
+let currentScale = 1;
+let actualPdfWidth = 0;
+let actualPdfHeight = 0;
+let fields = [];
+let fieldCounter = 0;
+
+function createFieldRow() {
+    const id = fieldCounter++;
+    const row = document.createElement('div');
+    row.className = 'row g-3 mb-3 bg-white p-3 rounded border align-items-end shadow-sm field-row';
+    row.id = `fieldRow_${id}`;
+
+    row.innerHTML = `
+        <div class="col-md-2">
+            <label class="form-label fw-semibold fs-6 mb-1">Field Name (e.g. [Date])</label>
+            <input type="text" class="form-control rounded-3 py-1" id="fieldName_${id}" value="[Student Name]">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold fs-6 mb-1">Color</label>
+            <input type="color" class="form-control form-control-color rounded-3 p-1 w-100" id="textColor_${id}" value="#000000">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold fs-6 mb-1">Size</label>
+            <input type="number" class="form-control rounded-3 py-1" id="fontSize_${id}" value="30">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-semibold fs-6 mb-1">Font Family</label>
+            <select class="form-select rounded-3 py-1" id="fontFamily_${id}">
+                <option value="Helvetica">Helvetica (Default)</option>
+                <option value="PinyonScript">Pinyon Script</option>
+                <option value="GreatVibes">Great Vibes</option>
+                <option value="AlexBrush">Alex Brush</option>
+                <option value="DancingScript">Dancing Script</option>
+                <option value="Parisienne">Parisienne</option>
+                <option value="Playball">Playball</option>
+                <option value="Rochester">Rochester</option>
+                <option value="Satisfy">Satisfy</option>
+                <option value="Tangerine">Tangerine</option>
+                <option value="Allura">Allura</option>
+                <option value="MrDeHaviland">Mr De Haviland</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-1">
+            <div>
+                <label class="form-label fw-semibold fs-6 mb-1">X</label>
+                <input type="number" step="0.1" class="form-control rounded-3 py-1" id="xPos_${id}" readonly>
+            </div>
+            <div>
+                <label class="form-label fw-semibold fs-6 mb-1">Y</label>
+                <input type="number" step="0.1" class="form-control rounded-3 py-1" id="yPos_${id}" readonly>
+            </div>
+        </div>
+        <div class="col-md-1 text-center">
+            <button type="button" class="btn btn-outline-danger btn-sm rounded-circle px-2 py-1 remove-field-btn" data-id="${id}"><i class="fa-solid fa-trash"></i></button>
+        </div>
+    `;
+
+    // Create corresponding overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'draggable-item position-absolute user-select-none font-pinyon';
+    overlay.style.cursor = 'grab';
+    overlay.style.display = previewContainer.style.display === 'none' ? 'none' : 'block';
+    overlay.id = `overlay_${id}`;
+
+    // Style settings based on row
+    overlay.innerText = '[Student Name]';
+    overlay.style.left = '50%';
+    overlay.style.top = `${40 + (id * 10)}%`; // V-stack them slightly
+    previewContainer.appendChild(overlay);
+
+    fields.push({ id, row, overlay });
+    fieldsContainer.appendChild(row);
+
+    // Event listeners
+    document.getElementById(`fieldName_${id}`).addEventListener('input', (e) => { overlay.innerText = e.target.value; updateTextStyle(id); });
+    document.getElementById(`fontSize_${id}`).addEventListener('input', () => updateTextStyle(id));
+    document.getElementById(`fontFamily_${id}`).addEventListener('change', () => updateTextStyle(id));
+    document.getElementById(`textColor_${id}`).addEventListener('input', () => updateTextStyle(id));
+
+    const removeBtn = row.querySelector('.remove-field-btn');
+    removeBtn.addEventListener('click', () => {
+        if (fields.length <= 1) return alert("You must have at least one field.");
+        fields = fields.filter(f => f.id !== id);
+        row.remove();
+        overlay.remove();
+    });
+
+    initDraggable(overlay, document.getElementById(`xPos_${id}`), document.getElementById(`yPos_${id}`));
+    setTimeout(() => updateTextStyle(id), 10);
+    setTimeout(() => triggerInitialPositions(), 50);
+}
+
+function updateTextStyle(id) {
+    const field = fields.find(f => f.id === id);
+    if (!field) return;
+
+    const size = parseFloat(document.getElementById(`fontSize_${id}`).value) || 30;
+    field.overlay.style.fontSize = (size * currentScale) + 'px';
+    field.overlay.style.color = document.getElementById(`textColor_${id}`).value;
+
+    const family = document.getElementById(`fontFamily_${id}`).value;
+    if (family === 'PinyonScript') field.overlay.style.fontFamily = "'Pinyon Script', cursive";
+    else if (family === 'GreatVibes') field.overlay.style.fontFamily = "'Great Vibes', cursive";
+    else if (family === 'AlexBrush') field.overlay.style.fontFamily = "'Alex Brush', cursive";
+    else if (family === 'DancingScript') field.overlay.style.fontFamily = "'Dancing Script', cursive";
+    else if (family === 'Parisienne') field.overlay.style.fontFamily = "'Parisienne', cursive";
+    else if (family === 'Playball') field.overlay.style.fontFamily = "'Playball', cursive";
+    else if (family === 'Rochester') field.overlay.style.fontFamily = "'Rochester', cursive";
+    else if (family === 'Satisfy') field.overlay.style.fontFamily = "'Satisfy', cursive";
+    else if (family === 'Tangerine') field.overlay.style.fontFamily = "'Tangerine', cursive";
+    else if (family === 'Allura') field.overlay.style.fontFamily = "'Allura', cursive";
+    else if (family === 'MrDeHaviland') field.overlay.style.fontFamily = "'Mr De Haviland', cursive";
+    else field.overlay.style.fontFamily = "var(--font-body)";
+}
+
+function initDraggable(element, xInput, yInput) {
+    let isDragging = false;
+
+    element.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        element.style.cursor = 'grabbing';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const rect = previewContainer.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        let y = e.clientY - rect.top;
+
+        if (x < 0) x = 0;
+        if (y < 0) y = 0;
+        if (x > rect.width) x = rect.width;
+        if (y > rect.height) y = rect.height;
+
+        element.style.left = x + 'px';
+        element.style.top = y + 'px';
+
+        if (actualPdfWidth > 0 && xInput && yInput) {
+            const actualX = x / currentScale;
+            const actualY = y / currentScale;
+            const pdfLibY = actualPdfHeight - actualY;
+            xInput.value = actualX.toFixed(1);
+            yInput.value = pdfLibY.toFixed(1);
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            element.style.cursor = 'grab';
+        }
+    });
+}
+
+function triggerInitialPositions() {
+    fields.forEach(f => {
+        const xInput = document.getElementById(`xPos_${f.id}`);
+        const yInput = document.getElementById(`yPos_${f.id}`);
+        if (actualPdfWidth > 0) {
+            const rect = previewContainer.getBoundingClientRect();
+            const px = parseFloat(f.overlay.style.left) || (rect.width / 2);
+            const py = parseFloat(f.overlay.style.top) || (rect.height / 2);
+            // It might be stored as percentage initially
+            let realX = typeof f.overlay.style.left === 'string' && f.overlay.style.left.includes('%') ? rect.width * (parseFloat(f.overlay.style.left) / 100) : px;
+            let realY = typeof f.overlay.style.top === 'string' && f.overlay.style.top.includes('%') ? rect.height * (parseFloat(f.overlay.style.top) / 100) : py;
+
+            xInput.value = (realX / currentScale).toFixed(1);
+            yInput.value = (actualPdfHeight - (realY / currentScale)).toFixed(1);
+        }
+    });
+}
+
+// Ensure at least one field row exists
+addFieldBtn.addEventListener('click', createFieldRow);
+createFieldRow(); // Initialize default Name row
+
+// Form QR Toggle
+enableQrCodeCheckbox.addEventListener('change', (e) => {
+    if (e.target.checked) {
+        qrSettingsDiv.classList.remove('d-none');
+        if (previewContainer.style.display !== 'none') qrOverlay.classList.remove('d-none');
+    } else {
+        qrSettingsDiv.classList.add('d-none');
+        qrOverlay.classList.add('d-none');
+        qrXPosInput.value = '';
+        qrYPosInput.value = '';
+    }
+});
+initDraggable(qrOverlay, qrXPosInput, qrYPosInput);
+
+if (templateFileInput) {
+    templateFileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+            previewContainer.style.display = 'none';
+            return;
+        }
+
+        previewContainer.style.display = 'inline-block';
+        fields.forEach(f => f.overlay.style.display = 'block');
+        if (enableQrCodeCheckbox.checked) qrOverlay.classList.remove('d-none');
+
+        const fileReader = new FileReader();
+
+        const calculateAndRender = (w, h, renderFn) => {
+            actualPdfWidth = w;
+            actualPdfHeight = h;
+            if (pdfWidthInput) pdfWidthInput.value = actualPdfWidth;
+            if (pdfHeightInput) pdfHeightInput.value = actualPdfHeight;
+
+            const maxW = 800;
+            currentScale = w > maxW ? maxW / w : 1;
+            templateCanvas.width = w * currentScale;
+            templateCanvas.height = h * currentScale;
+
+            renderFn();
+            triggerInitialPositions();
+            fields.forEach(f => updateTextStyle(f.id));
+
+            // Trigger QR Initial
+            qrOverlay.style.left = '80%';
+            qrOverlay.style.top = '80%';
+            if (actualPdfWidth > 0) {
+                const rx = templateCanvas.width * 0.8;
+                const ry = templateCanvas.height * 0.8;
+                qrXPosInput.value = (rx / currentScale).toFixed(1);
+                qrYPosInput.value = (actualPdfHeight - (ry / currentScale)).toFixed(1);
+            }
+        };
+
+        if (file.type === 'application/pdf') {
+            fileReader.onload = async function () {
+                const typedarray = new Uint8Array(this.result);
+                pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+                    pdf.getPage(1).then(page => {
+                        const vp = page.getViewport({ scale: 1 });
+                        calculateAndRender(vp.width, vp.height, () => {
+                            page.render({
+                                canvasContext: templateCanvas.getContext('2d'),
+                                viewport: page.getViewport({ scale: currentScale })
+                            });
+                        });
+                    });
+                });
+            };
+            fileReader.readAsArrayBuffer(file);
+        } else if (file.type.match('image.*')) {
+            fileReader.onload = function (event) {
+                const img = new Image();
+                img.onload = () => calculateAndRender(img.width, img.height, () => {
+                    templateCanvas.getContext('2d').drawImage(img, 0, 0, templateCanvas.width, templateCanvas.height);
+                });
+                img.src = event.target.result;
+            }
+            fileReader.readAsDataURL(file);
+        }
+    });
+}

@@ -1,7 +1,9 @@
 const express = require('express');
 const multer = require('multer');
 const csv = require('csv-parser');
+const xlsx = require('xlsx');
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
+const fontkit = require('@pdf-lib/fontkit');
 const nodemailer = require('nodemailer');
 const archiver = require('archiver');
 const fs = require('fs');
@@ -10,6 +12,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const { google } = require('googleapis');
+const qrcode = require('qrcode');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -24,15 +27,7 @@ const GENERATED_DIR = path.join(__dirname, 'generated');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(GENERATED_DIR)) fs.mkdirSync(GENERATED_DIR, { recursive: true });
 
-// Persistent Visitor Counter
-const COUNTER_FILE = path.join(__dirname, 'visitor_count.json');
-let visitorCount = 0;
-if (fs.existsSync(COUNTER_FILE)) {
-    try {
-        const data = fs.readFileSync(COUNTER_FILE, 'utf8');
-        visitorCount = JSON.parse(data).count || 0;
-    } catch (e) { console.error("Could not read counter file"); }
-}
+// Visitor Counter logic removed per user request
 
 // Multer Configuration
 const storage = multer.diskStorage({
@@ -94,13 +89,14 @@ app.get('/auth/google/callback', async (req, res) => {
     }
 });
 
-app.post('/api/upload', upload.fields([{ name: 'csvFile' }, { name: 'templateFile' }]), async (req, res) => {
+app.post('/api/upload', upload.fields([{ name: 'csvFile' }, { name: 'dataFile' }, { name: 'templateFile' }]), async (req, res) => {
     try {
-        if (!req.files || !req.files['csvFile'] || !req.files['templateFile']) {
-            return res.status(400).json({ error: 'Missing CSV or Template files' });
+        const uploadedDataFile = req.files['dataFile'] ? req.files['dataFile'][0] : (req.files['csvFile'] ? req.files['csvFile'][0] : null);
+        if (!uploadedDataFile || !req.files['templateFile']) {
+            return res.status(400).json({ error: 'Missing Data or Template files' });
         }
 
-        const csvFile = req.files['csvFile'][0];
+        const dataFile = uploadedDataFile;
         const templateFile = req.files['templateFile'][0];
 
         const jobId = Date.now().toString();
@@ -117,28 +113,86 @@ app.post('/api/upload', upload.fields([{ name: 'csvFile' }, { name: 'templateFil
         };
 
         const students = [];
-        fs.createReadStream(csvFile.path)
-            .pipe(csv())
-            .on('data', (data) => students.push(data))
-            .on('end', async () => {
-                jobs[jobId].total = students.length;
-                jobs[jobId].status = 'processing';
-                res.json({ jobId, total: students.length, message: 'Processing started' });
+        const startProcessing = async () => {
+            jobs[jobId].total = students.length;
+            jobs[jobId].status = 'processing';
+            res.json({ jobId, total: students.length, message: 'Processing started' });
 
-                try {
-                    await processBatch(jobId, students, templateFile, req.body, jobDir);
-                } catch (err) {
-                    console.error('Batch error:', err);
-                    jobs[jobId].status = 'error';
-                }
+            try {
+                const config = {
+                    senderEmail: req.body.senderEmail,
+                    refreshToken: req.body.refreshToken,
+                    subject: req.body.subject,
+                    body: req.body.body,
+                    fieldsPayload: req.body.fieldsPayload,
+                    enableQrCode: req.body.enableQrCode === 'on' || req.body.enableQrCode === 'true',
+                    qrXPos: req.body.qrXPos,
+                    qrYPos: req.body.qrYPos
+                };
+                await processBatch(jobId, students, templateFile, config, jobDir);
+            } catch (err) {
+                console.error('Batch error:', err);
+                jobs[jobId].status = 'error';
+            }
 
-                if (fs.existsSync(csvFile.path)) fs.unlinkSync(csvFile.path);
-                if (fs.existsSync(templateFile.path)) fs.unlinkSync(templateFile.path);
-            })
-            .on('error', (err) => {
+            if (fs.existsSync(dataFile.path)) fs.unlinkSync(dataFile.path);
+            if (fs.existsSync(templateFile.path)) fs.unlinkSync(templateFile.path);
+        };
+
+        const ext = path.extname(dataFile.originalname).toLowerCase();
+        if (ext === '.xlsx' || ext === '.xls') {
+            try {
+                const workbook = xlsx.readFile(dataFile.path);
+                const sheetName = workbook.SheetNames[0];
+                const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
+                students.push(...sheetData);
+                startProcessing();
+            } catch (err) {
                 console.error(err);
-                res.status(500).json({ error: 'Failed to read CSV' });
-            });
+                if (fs.existsSync(dataFile.path)) fs.unlinkSync(dataFile.path);
+                res.status(500).json({ error: 'Failed to read Excel file' });
+            }
+        } else if (ext === '.pdf') {
+            try {
+                const pdfParse = require('pdf-parse');
+                const dataBuffer = fs.readFileSync(dataFile.path);
+                const pdfData = await pdfParse(dataBuffer);
+                const lines = pdfData.text.split('\n').filter(l => l.trim().length > 0);
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    const emailMatch = line.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/i);
+                    if (emailMatch) {
+                        const email = emailMatch[1];
+                        let name = line.replace(email, '').replace(/,/g, '').trim();
+                        // If no name found on the same line, check the previous line
+                        if (!name && i > 0) {
+                            if (!lines[i - 1].match(/@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+/)) {
+                                name = lines[i - 1].replace(/,/g, '').trim();
+                            }
+                        }
+                        if (!name) name = 'Student';
+
+                        // To be compatible with our smart field detection, add standard object keys
+                        students.push({ Name: name, Email: email });
+                    }
+                }
+                startProcessing();
+            } catch (err) {
+                console.error(err);
+                if (fs.existsSync(dataFile.path)) fs.unlinkSync(dataFile.path);
+                res.status(500).json({ error: 'Failed to read PDF file' });
+            }
+        } else {
+            fs.createReadStream(dataFile.path)
+                .pipe(csv())
+                .on('data', (data) => students.push(data))
+                .on('end', startProcessing)
+                .on('error', (err) => {
+                    console.error(err);
+                    res.status(500).json({ error: 'Failed to read CSV' });
+                });
+        }
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Server error starting the job' });
@@ -146,7 +200,7 @@ app.post('/api/upload', upload.fields([{ name: 'csvFile' }, { name: 'templateFil
 });
 
 async function processBatch(jobId, students, templateFile, config, jobDir) {
-    const { senderEmail, refreshToken, subject, body, fontSize, xPos, yPos } = config;
+    const { senderEmail, refreshToken, subject, body, fieldsPayload, enableQrCode, qrXPos, qrYPos } = config;
     const templateBytes = fs.readFileSync(templateFile.path);
     const isPdf = templateFile.originalname.toLowerCase().endsWith('.pdf');
 
@@ -191,15 +245,49 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
         page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
     }
 
-    const helveticaFont = await basePdfDoc.embedFont(StandardFonts.Helvetica);
+    basePdfDoc.registerFontkit(fontkit);
+
+    let customFontNames = [
+        'PinyonScript', 'GreatVibes', 'AlexBrush', 'DancingScript',
+        'Parisienne', 'Playball', 'Rochester', 'Satisfy', 'Tangerine',
+        'Allura', 'MrDeHaviland'
+    ];
+    let loadedCustomFonts = {};
+    for (let fName of customFontNames) {
+        const fontPath = path.join(__dirname, 'fonts', `${fName}-Regular.ttf`);
+        if (fs.existsSync(fontPath)) {
+            loadedCustomFonts[fName] = fs.readFileSync(fontPath);
+        }
+    }
+
+    const hexToRgbFn = (hex) => {
+        if (!hex) return rgb(0, 0, 0);
+        hex = hex.replace(/^#/, '');
+        if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+        const int = parseInt(hex, 16);
+        return rgb(((int >> 16) & 255) / 255, ((int >> 8) & 255) / 255, (int & 255) / 255);
+    };
+
+    let fields = [];
+    try {
+        if (fieldsPayload) fields = JSON.parse(fieldsPayload);
+    } catch (e) {
+        console.error("Failed to parse fieldsPayload:", e);
+    }
 
     const BATCH_SIZE = 3;
     for (let i = 0; i < students.length; i += BATCH_SIZE) {
         const batch = students.slice(i, i + BATCH_SIZE);
 
         await Promise.all(batch.map(async (bStudent) => {
-            const studentName = bStudent.Name || bStudent.name || bStudent.NAME || Object.values(bStudent)[0];
-            const studentEmail = bStudent.Email || bStudent.email || bStudent.EMAIL || Object.values(bStudent)[1];
+            let studentName = null;
+            let studentEmail = null;
+            for (const key in bStudent) {
+                if (/name/i.test(key)) studentName = bStudent[key];
+                if (/mail/i.test(key)) studentEmail = bStudent[key];
+            }
+            if (!studentName) studentName = Object.values(bStudent)[0];
+            if (!studentEmail) studentEmail = Object.values(bStudent)[1];
 
             if (!studentName || !studentEmail) {
                 if (jobs[jobId]) jobs[jobId].failed++;
@@ -214,25 +302,81 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
                 const firstPage = copiedPages[0];
                 pdfDoc.addPage(firstPage);
 
-                // We need to re-embed the font for the cloned document instance
-                const currentFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+                const fontCache = {};
 
-                const size = parseFloat(fontSize) || 30;
-                const textWidth = currentFont.widthOfTextAtSize(studentName, size);
-                const textHeight = currentFont.heightAtSize(size);
+                // Render dynamic text fields
+                for (let field of fields) {
+                    let fieldText = field.name || "";
 
-                let x = parseFloat(xPos);
-                let y = parseFloat(yPos);
-                if (isNaN(x)) x = (firstPage.getWidth() / 2) - (textWidth / 2);
-                if (isNaN(y)) y = (firstPage.getHeight() / 2) - (textHeight / 2);
+                    // Replace variables like [Name], [Email] inside the text if they exist
+                    // (Currently standardizing mostly on mapping everything to studentName for safety)
+                    fieldText = fieldText.replace(/\[name\]/gi, studentName);
 
-                firstPage.drawText(studentName, {
-                    x,
-                    y,
-                    size,
-                    font: currentFont,
-                    color: rgb(0, 0, 0)
-                });
+                    // Support email variable replacement if requested
+                    fieldText = fieldText.replace(/\[email\]/gi, studentEmail);
+
+                    // Skip empty fields
+                    if (!fieldText.trim() || fieldText === '[Empty Field]') continue;
+
+                    let currentFont;
+                    if (field.fontFamily && loadedCustomFonts[field.fontFamily]) {
+                        if (!fontCache[field.fontFamily]) {
+                            fontCache[field.fontFamily] = await pdfDoc.embedFont(loadedCustomFonts[field.fontFamily]);
+                        }
+                        currentFont = fontCache[field.fontFamily];
+                    } else {
+                        if (!fontCache['Helvetica']) {
+                            fontCache['Helvetica'] = await pdfDoc.embedFont(StandardFonts.Helvetica);
+                        }
+                        currentFont = fontCache['Helvetica'];
+                    }
+
+                    const size = parseFloat(field.fontSize) || 30;
+                    const textWidth = currentFont.widthOfTextAtSize(fieldText, size);
+                    const textHeight = currentFont.heightAtSize(size);
+
+                    let x = parseFloat(field.xPos);
+                    let y = parseFloat(field.yPos);
+
+                    if (!isNaN(x)) x = x - (textWidth / 2);
+                    if (!isNaN(y)) y = y - (textHeight / 2);
+
+                    if (isNaN(x)) x = (firstPage.getWidth() / 2) - (textWidth / 2);
+                    if (isNaN(y)) y = (firstPage.getHeight() / 2) - (textHeight / 2);
+
+                    firstPage.drawText(fieldText, {
+                        x,
+                        y,
+                        size,
+                        font: currentFont,
+                        color: hexToRgbFn(field.textColor)
+                    });
+                }
+
+                // Embed QR code if enabled
+                if (enableQrCode) {
+                    const qrData = `Verified Certificate for ${studentName} (${studentEmail})`;
+                    const qrDataUrl = await qrcode.toDataURL(qrData, { margin: 1, color: { dark: '#000000', light: '#ffffff' } });
+                    const qrBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
+                    const qrImage = await pdfDoc.embedPng(qrBuffer);
+
+                    const qrDim = 100; // Resize QR to sensible 100x100
+                    let qX = parseFloat(qrXPos);
+                    let qY = parseFloat(qrYPos);
+
+                    if (!isNaN(qX)) qX = qX - (qrDim / 2);
+                    if (!isNaN(qY)) qY = qY - (qrDim / 2);
+
+                    if (isNaN(qX)) qX = firstPage.getWidth() - qrDim - 20;
+                    if (isNaN(qY)) qY = 20;
+
+                    firstPage.drawImage(qrImage, {
+                        x: qX,
+                        y: qY,
+                        width: qrDim,
+                        height: qrDim
+                    });
+                }
 
                 const pdfBytes = await pdfDoc.save();
                 const fileName = `${studentName.replace(/[^a-zA-Z0-9]/g, '_')}_certificate.pdf`;
@@ -359,13 +503,7 @@ app.get('/api/status/:jobId', (req, res) => {
     res.json(job);
 });
 
-// Visitor Count Endpoint
-app.get('/api/visitor-count', (req, res) => {
-    visitorCount++;
-    fs.promises.writeFile(COUNTER_FILE, JSON.stringify({ count: visitorCount }))
-        .catch(err => console.error("Failed to save visitor count", err));
-    res.json({ count: visitorCount });
-});
+// Visitor count endpoint removed
 
 app.get('/api/download/:jobId', (req, res) => {
     const zipPath = path.join(GENERATED_DIR, `${req.params.jobId}.zip`);
