@@ -99,15 +99,11 @@ document.getElementById('certForm').addEventListener('submit', async (e) => {
 
     const formData = new FormData(form);
     const payloadFields = fields.map(f => {
-        let scaledFontSize = 30;
         let rawFontSize = parseFloat(document.getElementById(`fontSize_${f.id}`).value) || 30;
-        if (currentScale && currentScale > 0) {
-            scaledFontSize = rawFontSize / currentScale;
-        }
 
         return {
             name: document.getElementById(`fieldName_${f.id}`).value || '[Empty Field]',
-            fontSize: scaledFontSize.toFixed(1),
+            fontSize: rawFontSize.toFixed(1),
             fontFamily: document.getElementById(`fontFamily_${f.id}`).value,
             textColor: document.getElementById(`textColor_${f.id}`).value,
             xPos: document.getElementById(`xPos_${f.id}`).value,
@@ -352,8 +348,16 @@ function updateTextStyle(id) {
     if (!field) return;
 
     const size = parseFloat(document.getElementById(`fontSize_${id}`).value) || 30;
-    field.overlay.style.fontSize = (size * currentScale) + 'px';
-    field.overlay.style.color = document.getElementById(`textColor_${id}`).value;
+    const overlay = field.overlay;
+
+    if (actualPdfWidth && actualPdfWidth > 0 && templateCanvas.clientWidth > 0) {
+        const responsiveScale = templateCanvas.clientWidth / actualPdfWidth;
+        overlay.style.fontSize = (size * responsiveScale) + 'px';
+    } else {
+        overlay.style.fontSize = size + 'px';
+    }
+
+    overlay.style.color = document.getElementById(`textColor_${id}`).value;
 
     const family = document.getElementById(`fontFamily_${id}`).value;
     if (family === 'PinyonScript') field.overlay.style.fontFamily = "'Pinyon Script', cursive";
@@ -380,7 +384,7 @@ function initDraggable(element, xInput, yInput) {
 
     document.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
-        const rect = previewContainer.getBoundingClientRect();
+        const rect = templateCanvas.getBoundingClientRect();
         let x = e.clientX - rect.left;
         let y = e.clientY - rect.top;
 
@@ -417,8 +421,8 @@ function triggerInitialPositions() {
     fields.forEach(f => {
         const xInput = document.getElementById(`xPos_${f.id}`);
         const yInput = document.getElementById(`yPos_${f.id}`);
-        if (actualPdfWidth > 0) {
-            const rect = previewContainer.getBoundingClientRect();
+        if (actualPdfWidth > 0 && templateCanvas.getBoundingClientRect().width > 0) {
+            const rect = templateCanvas.getBoundingClientRect();
             const scaleX = actualPdfWidth / rect.width;
             const scaleY = actualPdfHeight / rect.height;
 
@@ -484,8 +488,8 @@ if (templateFileInput) {
             // Trigger QR Initial
             qrOverlay.style.left = '80%';
             qrOverlay.style.top = '80%';
-            if (actualPdfWidth > 0) {
-                const rect = previewContainer.getBoundingClientRect();
+            if (actualPdfWidth > 0 && templateCanvas.getBoundingClientRect().width > 0) {
+                const rect = templateCanvas.getBoundingClientRect();
                 const scaleX = actualPdfWidth / rect.width;
                 const scaleY = actualPdfHeight / rect.height;
                 const rx = rect.width * 0.8;
