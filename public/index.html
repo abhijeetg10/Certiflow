@@ -225,6 +225,18 @@
                                     <input type="hidden" name="senderEmail" id="hiddenSenderEmail">
                                     <input type="hidden" name="refreshToken" id="hiddenRefreshToken">
 
+                                    <div class="col-12 mt-1">
+                                        <div class="form-check form-switch fs-5 p-3 bg-light rounded shadow-sm border">
+                                            <input class="form-check-input ms-0" type="checkbox" role="switch"
+                                                id="skipEmailToggle" name="skipEmailToggle">
+                                            <label class="form-check-label ms-3 fw-bold text-dark"
+                                                for="skipEmailToggle">Skip emailing</label>
+                                            <div class="ms-3 text-muted small mt-1">Activating this will instantly
+                                                download a ZIP archive containing all your rendered certificates without
+                                                sending them to real recipients.</div>
+                                        </div>
+                                    </div>
+
                                     <div class="col-12">
                                         <label class="form-label fw-semibold">Email Subject</label>
                                         <input type="text" class="form-control rounded-3 py-2" name="subject"

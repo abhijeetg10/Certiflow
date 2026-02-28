@@ -41,11 +41,34 @@ document.getElementById('googleLogoutBtn').addEventListener('click', () => {
 
 // Visitor count functionality removed per user request
 
+// Handle Skip Email UI Toggle
+const skipEmailToggle = document.getElementById('skipEmailToggle');
+const emailSubjectInput = document.querySelector('input[name="subject"]');
+const emailBodyInput = document.querySelector('textarea[name="body"]');
+
+if (skipEmailToggle) {
+    skipEmailToggle.addEventListener('change', (e) => {
+        const isSkipped = e.target.checked;
+        emailSubjectInput.disabled = isSkipped;
+        emailBodyInput.disabled = isSkipped;
+
+        if (isSkipped) {
+            emailSubjectInput.closest('.col-12').style.opacity = '0.5';
+            emailBodyInput.closest('.col-12').style.opacity = '0.5';
+        } else {
+            emailSubjectInput.closest('.col-12').style.opacity = '1';
+            emailBodyInput.closest('.col-12').style.opacity = '1';
+        }
+    });
+}
+
 document.getElementById('certForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const senderEmail = document.getElementById('hiddenSenderEmail').value;
-    if (!senderEmail) {
+    const isSkipEmail = document.getElementById('skipEmailToggle') && document.getElementById('skipEmailToggle').checked;
+
+    if (!senderEmail && !isSkipEmail) {
         alert("Please Sign in with Google first before generating certificates.");
         return;
     }

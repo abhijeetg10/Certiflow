@@ -126,6 +126,7 @@ app.post('/api/upload', upload.fields([{ name: 'csvFile' }, { name: 'dataFile' }
                     body: req.body.body,
                     fieldsPayload: req.body.fieldsPayload,
                     enableQrCode: req.body.enableQrCode === 'on' || req.body.enableQrCode === 'true',
+                    skipEmail: req.body.skipEmailToggle === 'on' || req.body.skipEmailToggle === 'true',
                     qrXPos: req.body.qrXPos,
                     qrYPos: req.body.qrYPos
                 };
@@ -200,34 +201,36 @@ app.post('/api/upload', upload.fields([{ name: 'csvFile' }, { name: 'dataFile' }
 });
 
 async function processBatch(jobId, students, templateFile, config, jobDir) {
-    const { senderEmail, refreshToken, subject, body, fieldsPayload, enableQrCode, qrXPos, qrYPos } = config;
+    const { senderEmail, refreshToken, subject, body, fieldsPayload, enableQrCode, skipEmail, qrXPos, qrYPos } = config;
     const templateBytes = fs.readFileSync(templateFile.path);
     const isPdf = templateFile.originalname.toLowerCase().endsWith('.pdf');
 
-    const oauth2Client = new google.auth.OAuth2(
-        process.env.CLIENT_ID,
-        process.env.CLIENT_SECRET,
-        process.env.REDIRECT_URI || 'http://localhost:3000/auth/google/callback'
-    );
+    let transporter, gmail;
+    if (!skipEmail) {
+        const oauth2Client = new google.auth.OAuth2(
+            process.env.CLIENT_ID,
+            process.env.CLIENT_SECRET,
+            process.env.REDIRECT_URI || 'http://localhost:3000/auth/google/callback'
+        );
 
-    oauth2Client.setCredentials({ refresh_token: refreshToken });
+        oauth2Client.setCredentials({ refresh_token: refreshToken });
 
-    let accessToken;
-    try {
-        const res = await oauth2Client.getAccessToken();
-        accessToken = res.token;
-    } catch (err) {
-        console.error("Failed to acquire access token:", err);
-        jobs[jobId].status = 'error';
-        return;
+        try {
+            const res = await oauth2Client.getAccessToken();
+            // token gets automatically managed by google-auth-library
+        } catch (err) {
+            console.error("Failed to acquire access token:", err);
+            jobs[jobId].status = 'error';
+            return;
+        }
+
+        transporter = nodemailer.createTransport({
+            streamTransport: true,
+            newline: 'windows'
+        });
+
+        gmail = google.gmail({ version: 'v1', auth: oauth2Client });
     }
-
-    const transporter = nodemailer.createTransport({
-        streamTransport: true,
-        newline: 'windows'
-    });
-
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
     // Cache the base PDF template OUTSIDE the loop to prevent OOM memory crashes on Render
     let basePdfDoc;
@@ -395,35 +398,38 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
                 const filePath = path.join(jobDir, fileName);
                 fs.writeFileSync(filePath, pdfBytes);
 
-                const mailOptions = {
-                    from: senderEmail,
-                    to: studentEmail,
-                    subject: subject || "Your Participation Certificate",
-                    text: body ? body.replace(/\[Name\]/gi, studentName) : `Dear ${studentName}, Please find attached your certificate.`,
-                    attachments: [
-                        {
-                            filename: fileName,
-                            path: filePath
-                        }
-                    ]
-                };
+                if (!skipEmail) {
+                    const mailOptions = {
+                        from: senderEmail,
+                        to: studentEmail,
+                        subject: subject || "Your Participation Certificate",
+                        text: body ? body.replace(/\[Name\]/gi, studentName) : `Dear ${studentName}, Please find attached your certificate.`,
+                        attachments: [
+                            {
+                                filename: fileName,
+                                path: filePath
+                            }
+                        ]
+                    };
 
-                const info = await transporter.sendMail(mailOptions);
-                let raw = '';
-                for await (const chunk of info.message) {
-                    raw += chunk.toString();
-                }
-                const encodedMessage = Buffer.from(raw).toString('base64')
-                    .replace(/\+/g, '-')
-                    .replace(/\//g, '_')
-                    .replace(/=+$/, '');
-
-                await gmail.users.messages.send({
-                    userId: 'me',
-                    requestBody: {
-                        raw: encodedMessage
+                    const info = await transporter.sendMail(mailOptions);
+                    let raw = '';
+                    for await (const chunk of info.message) {
+                        raw += chunk.toString();
                     }
-                });
+                    const encodedMessage = Buffer.from(raw).toString('base64')
+                        .replace(/\+/g, '-')
+                        .replace(/\//g, '_')
+                        .replace(/=+$/, '');
+
+                    await gmail.users.messages.send({
+                        userId: 'me',
+                        requestBody: {
+                            raw: encodedMessage
+                        }
+                    });
+                }
+
                 if (jobs[jobId]) jobs[jobId].success++;
             } catch (error) {
                 console.error(`Error processing ${studentEmail}:`, error.message || error);
