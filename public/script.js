@@ -393,9 +393,13 @@ function initDraggable(element, xInput, yInput) {
         element.style.top = y + 'px';
 
         if (actualPdfWidth > 0 && xInput && yInput) {
-            const actualX = x / currentScale;
-            const actualY = y / currentScale;
+            const scaleX = actualPdfWidth / rect.width;
+            const scaleY = actualPdfHeight / rect.height;
+
+            const actualX = x * scaleX;
+            const actualY = y * scaleY;
             const pdfLibY = actualPdfHeight - actualY;
+
             xInput.value = actualX.toFixed(1);
             yInput.value = pdfLibY.toFixed(1);
         }
@@ -415,14 +419,17 @@ function triggerInitialPositions() {
         const yInput = document.getElementById(`yPos_${f.id}`);
         if (actualPdfWidth > 0) {
             const rect = previewContainer.getBoundingClientRect();
-            const px = parseFloat(f.overlay.style.left) || (rect.width / 2);
-            const py = parseFloat(f.overlay.style.top) || (rect.height / 2);
-            // It might be stored as percentage initially
-            let realX = typeof f.overlay.style.left === 'string' && f.overlay.style.left.includes('%') ? rect.width * (parseFloat(f.overlay.style.left) / 100) : px;
-            let realY = typeof f.overlay.style.top === 'string' && f.overlay.style.top.includes('%') ? rect.height * (parseFloat(f.overlay.style.top) / 100) : py;
+            const scaleX = actualPdfWidth / rect.width;
+            const scaleY = actualPdfHeight / rect.height;
 
-            xInput.value = (realX / currentScale).toFixed(1);
-            yInput.value = (actualPdfHeight - (realY / currentScale)).toFixed(1);
+            let px = parseFloat(f.overlay.style.left);
+            let py = parseFloat(f.overlay.style.top);
+
+            let realX = typeof f.overlay.style.left === 'string' && f.overlay.style.left.includes('%') ? rect.width * (parseFloat(f.overlay.style.left) / 100) : (px || rect.width / 2);
+            let realY = typeof f.overlay.style.top === 'string' && f.overlay.style.top.includes('%') ? rect.height * (parseFloat(f.overlay.style.top) / 100) : (py || rect.height / 2);
+
+            xInput.value = (realX * scaleX).toFixed(1);
+            yInput.value = (actualPdfHeight - (realY * scaleY)).toFixed(1);
         }
     });
 }
@@ -478,10 +485,13 @@ if (templateFileInput) {
             qrOverlay.style.left = '80%';
             qrOverlay.style.top = '80%';
             if (actualPdfWidth > 0) {
-                const rx = templateCanvas.width * 0.8;
-                const ry = templateCanvas.height * 0.8;
-                qrXPosInput.value = (rx / currentScale).toFixed(1);
-                qrYPosInput.value = (actualPdfHeight - (ry / currentScale)).toFixed(1);
+                const rect = previewContainer.getBoundingClientRect();
+                const scaleX = actualPdfWidth / rect.width;
+                const scaleY = actualPdfHeight / rect.height;
+                const rx = rect.width * 0.8;
+                const ry = rect.height * 0.8;
+                qrXPosInput.value = (rx * scaleX).toFixed(1);
+                qrYPosInput.value = (actualPdfHeight - (ry * scaleY)).toFixed(1);
             }
         };
 
