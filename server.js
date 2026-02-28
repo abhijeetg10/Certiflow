@@ -298,6 +298,7 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
             try {
                 // Instatiate a blank document and securely copy the cached template
                 const pdfDoc = await PDFDocument.create();
+                pdfDoc.registerFontkit(fontkit);
                 const copiedPages = await pdfDoc.copyPages(basePdfDoc, [0]);
                 const firstPage = copiedPages[0];
                 pdfDoc.addPage(firstPage);
