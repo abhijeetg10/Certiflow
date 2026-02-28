@@ -313,13 +313,19 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
                     let fieldText = field.name || "";
                     console.log(`[Before Replace] Original form text field: "${fieldText}"`);
 
-                    // (Currently standardizing mostly on mapping everything to studentName for safety)
-                    fieldText = fieldText.replace(/\[\s*(student\s*)?name\s*\]/gi, studentName || '');
+                    // Direct string lookup for accuracy over regex
+                    if (fieldText.toLowerCase().includes('[name]')) {
+                        fieldText = fieldText.replace(/\[name\]/gi, studentName || '');
+                    } else if (fieldText.toLowerCase().includes('[student name]')) {
+                        fieldText = fieldText.replace(/\[student name\]/gi, studentName || '');
+                    }
 
                     console.log(`[After Replace] Generated text field: "${fieldText}"`);
 
                     // Support email variable replacement if requested
-                    fieldText = fieldText.replace(/\[email\]/gi, studentEmail);
+                    if (fieldText.toLowerCase().includes('[email]')) {
+                        fieldText = fieldText.replace(/\[email\]/gi, studentEmail || '');
+                    }
 
                     // Skip empty fields
                     if (!fieldText.trim() || fieldText === '[Empty Field]') continue;
