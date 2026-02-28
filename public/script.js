@@ -220,7 +220,7 @@ function createFieldRow() {
     row.innerHTML = `
         <div class="col-md-2">
             <label class="form-label fw-semibold fs-6 mb-1">Field Name (e.g. [Date])</label>
-            <input type="text" class="form-control rounded-3 py-1" id="fieldName_${id}" value="[Student Name]">
+            <input type="text" class="form-control rounded-3 py-1" id="fieldName_${id}" value="[Name]">
         </div>
         <div class="col-md-2">
             <label class="form-label fw-semibold fs-6 mb-1">Color</label>

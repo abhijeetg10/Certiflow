@@ -308,9 +308,8 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
                 for (let field of fields) {
                     let fieldText = field.name || "";
 
-                    // Replace variables like [Name], [Email] inside the text if they exist
                     // (Currently standardizing mostly on mapping everything to studentName for safety)
-                    fieldText = fieldText.replace(/\[name\]/gi, studentName);
+                    fieldText = fieldText.replace(/\[(student )?name\]/gi, studentName || '');
 
                     // Support email variable replacement if requested
                     fieldText = fieldText.replace(/\[email\]/gi, studentEmail);
