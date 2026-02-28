@@ -354,7 +354,10 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
                     let y = parseFloat(field.yPos);
 
                     if (!isNaN(x)) x = x - (textWidth / 2);
-                    if (!isNaN(y)) y = y - (textHeight / 2);
+                    if (!isNaN(y)) {
+                        // Use CSS optical centering equivalence for line-height: 1
+                        y = y - (size * 0.28);
+                    }
 
                     if (isNaN(x)) x = (firstPage.getWidth() / 2) - (textWidth / 2);
                     if (isNaN(y)) y = (firstPage.getHeight() / 2) - (textHeight / 2);
