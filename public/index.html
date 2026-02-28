@@ -226,15 +226,7 @@
                                     <input type="hidden" name="refreshToken" id="hiddenRefreshToken">
 
                                     <div class="col-12 mt-1">
-                                        <div class="form-check form-switch fs-5 p-3 bg-light rounded shadow-sm border">
-                                            <input class="form-check-input ms-0" type="checkbox" role="switch"
-                                                id="skipEmailToggle" name="skipEmailToggle">
-                                            <label class="form-check-label ms-3 fw-bold text-dark"
-                                                for="skipEmailToggle">Skip emailing</label>
-                                            <div class="ms-3 text-muted small mt-1">Activating this will instantly
-                                                download a ZIP archive containing all your rendered certificates without
-                                                sending them to real recipients.</div>
-                                        </div>
+                                        <!-- Skip Toggle has been replaced by dual submit buttons below -->
                                     </div>
 
                                     <div class="col-12">
@@ -314,10 +306,16 @@
                                     </div>
                                 </div>
 
-                                <button type="submit" id="submitBtn"
-                                    class="btn btn-primary w-100 py-3 rounded-pill fw-bold fs-5 shadow-sm submit-btn">
-                                    <i class="fa-solid fa-paper-plane me-2"></i> Generate & Send Certificates
-                                </button>
+                                <div class="d-flex flex-column flex-md-row gap-3">
+                                    <button type="submit" id="submitBtn"
+                                        class="btn btn-primary w-100 py-3 rounded-pill fw-bold fs-5 shadow-sm submit-btn">
+                                        <i class="fa-solid fa-paper-plane me-2"></i> Generate & Send
+                                    </button>
+                                    <button type="submit" id="downloadZipBtn"
+                                        class="btn btn-dark w-100 py-3 rounded-pill fw-bold fs-5 shadow-sm submit-btn">
+                                        <i class="fa-solid fa-file-zipper me-2"></i> Download ZIP Only
+                                    </button>
+                                </div>
                             </form>
 
                             <!-- Progress Section -->

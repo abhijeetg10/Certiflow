@@ -66,7 +66,7 @@ document.getElementById('certForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const senderEmail = document.getElementById('hiddenSenderEmail').value;
-    const isSkipEmail = document.getElementById('skipEmailToggle') && document.getElementById('skipEmailToggle').checked;
+    const isSkipEmail = e.submitter && e.submitter.id === 'downloadZipBtn';
 
     if (!senderEmail && !isSkipEmail) {
         alert("Please Sign in with Google first before generating certificates.");
@@ -75,12 +75,20 @@ document.getElementById('certForm').addEventListener('submit', async (e) => {
 
     const form = e.target;
     const submitBtn = document.getElementById('submitBtn');
+    const downloadZipBtn = document.getElementById('downloadZipBtn');
     const progressSection = document.getElementById('progressSection');
     const downloadSection = document.getElementById('downloadSection');
 
     // Reset UI
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '⏳ Processing... Please wait';
+    if (submitBtn) submitBtn.disabled = true;
+    if (downloadZipBtn) downloadZipBtn.disabled = true;
+
+    if (isSkipEmail) {
+        if (downloadZipBtn) downloadZipBtn.innerHTML = '⏳ Zipping... Please wait';
+    } else {
+        if (submitBtn) submitBtn.innerHTML = '⏳ Processing... Please wait';
+    }
+
     progressSection.classList.remove('d-none');
     downloadSection.classList.add('d-none');
     document.getElementById('progressBar').style.width = '0%';
@@ -109,6 +117,7 @@ document.getElementById('certForm').addEventListener('submit', async (e) => {
 
     console.log("SENDING SCALED PAYLOAD FIELDS:", payloadFields);
     formData.append('fieldsPayload', JSON.stringify(payloadFields));
+    formData.append('skipEmailToggle', isSkipEmail ? 'true' : 'false');
 
     try {
         const res = await fetch('/api/upload', {
@@ -125,8 +134,14 @@ document.getElementById('certForm').addEventListener('submit', async (e) => {
         pollStatus(data.jobId);
     } catch (error) {
         alert('Error: ' + error.message);
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '🚀 Generate & Send Certificates';
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Generate & Send';
+        }
+        if (downloadZipBtn) {
+            downloadZipBtn.disabled = false;
+            downloadZipBtn.innerHTML = '<i class="fa-solid fa-file-zipper me-2"></i> Download ZIP Only';
+        }
     }
 });
 
@@ -139,8 +154,9 @@ function pollStatus(jobId) {
                 clearInterval(interval);
                 alert('Oops! The server process restarted or interrupted. This can happen on free hosting if memory limits or timeouts are reached. Please refresh the page. If it happens again, try formatting your image template to a lighter file size!');
                 const submitBtn = document.getElementById('submitBtn');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '🚀 Generate & Send Certificates';
+                const downloadZipBtn = document.getElementById('downloadZipBtn');
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Generate & Send'; }
+                if (downloadZipBtn) { downloadZipBtn.disabled = false; downloadZipBtn.innerHTML = '<i class="fa-solid fa-file-zipper me-2"></i> Download ZIP Only'; }
                 return;
             }
 
@@ -150,8 +166,9 @@ function pollStatus(jobId) {
                 clearInterval(interval);
                 alert('Status check failed: ' + data.error);
                 const submitBtn = document.getElementById('submitBtn');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '🚀 Generate & Send Certificates';
+                const downloadZipBtn = document.getElementById('downloadZipBtn');
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Generate & Send'; }
+                if (downloadZipBtn) { downloadZipBtn.disabled = false; downloadZipBtn.innerHTML = '<i class="fa-solid fa-file-zipper me-2"></i> Download ZIP Only'; }
                 return;
             }
 
@@ -167,8 +184,9 @@ function pollStatus(jobId) {
             if (data.status === 'completed' || data.status === 'error') {
                 clearInterval(interval);
                 const submitBtn = document.getElementById('submitBtn');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '🚀 Generate & Send Certificates';
+                const downloadZipBtn = document.getElementById('downloadZipBtn');
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Generate & Send'; }
+                if (downloadZipBtn) { downloadZipBtn.disabled = false; downloadZipBtn.innerHTML = '<i class="fa-solid fa-file-zipper me-2"></i> Download ZIP Only'; }
 
                 if (data.status === 'completed') {
                     document.getElementById('downloadSection').classList.remove('d-none');
