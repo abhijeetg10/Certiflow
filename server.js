@@ -282,12 +282,15 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
         await Promise.all(batch.map(async (bStudent) => {
             let studentName = null;
             let studentEmail = null;
-            for (const key in bStudent) {
-                if (/name/i.test(key)) studentName = bStudent[key];
-                if (/mail/i.test(key)) studentEmail = bStudent[key];
+            for (let key in bStudent) {
+                const normalizedKey = key.toString().toLowerCase().trim();
+                if (normalizedKey.includes('name')) studentName = bStudent[key];
+                if (normalizedKey.includes('mail')) studentEmail = bStudent[key];
             }
             if (!studentName) studentName = Object.values(bStudent)[0];
             if (!studentEmail) studentEmail = Object.values(bStudent)[1];
+
+            console.log(`[Cert Rendering] Processing student: ${studentName}, Email: ${studentEmail}`);
 
             if (!studentName || !studentEmail) {
                 if (jobs[jobId]) jobs[jobId].failed++;
@@ -308,9 +311,12 @@ async function processBatch(jobId, students, templateFile, config, jobDir) {
                 // Render dynamic text fields
                 for (let field of fields) {
                     let fieldText = field.name || "";
+                    console.log(`[Before Replace] Original form text field: "${fieldText}"`);
 
                     // (Currently standardizing mostly on mapping everything to studentName for safety)
-                    fieldText = fieldText.replace(/\[(student )?name\]/gi, studentName || '');
+                    fieldText = fieldText.replace(/\[\s*(student\s*)?name\s*\]/gi, studentName || '');
+
+                    console.log(`[After Replace] Generated text field: "${fieldText}"`);
 
                     // Support email variable replacement if requested
                     fieldText = fieldText.replace(/\[email\]/gi, studentEmail);

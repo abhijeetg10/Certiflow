@@ -76,6 +76,7 @@ document.getElementById('certForm').addEventListener('submit', async (e) => {
         yPos: document.getElementById(`yPos_${f.id}`).value
     }));
 
+    console.log("SENDING PAYLOAD FIELDS:", payloadFields);
     formData.append('fieldsPayload', JSON.stringify(payloadFields));
 
     try {
